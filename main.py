@@ -36,10 +36,7 @@ source_filepath = '/home/kelvinhwee/PycharmProjects/sourceFiles'
 
 #=== reading in of data
 emails_df = pd.read_csv(source_filepath + '/emails.csv')
-emails_df2 = emails_df.copy()
 
 #=== make a copy of the dataframe
 print(emails_df.head())
 
-import os
-os.getcwd()
