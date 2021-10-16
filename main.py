@@ -17,7 +17,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # - import packages for data manipulations
 import numpy as np
 import pandas as pd
-import os
+
 
 # - import packages for NLP
 '''
@@ -30,7 +30,8 @@ import os
 
 
 import spacy
-nlp = spacy.load('en_core_web_sm-3.1.0')
+nlp = spacy.load('en_core_web_sm')
+
 doc = nlp("the drawdown process is governed by astm standard d823")
 
 
