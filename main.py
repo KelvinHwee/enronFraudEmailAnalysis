@@ -20,6 +20,7 @@ import pandas as pd
 
 
 # - import packages for visualisation
+from pyvis.network import Network
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -43,6 +44,7 @@ source_filepath = '/home/kelvinhwee/PycharmProjects/sourceFiles'
 # - we load the spacy trained pipelines (for English); this is an English pipeline optimized for CPU
 nlp = spacy.load('en_core_web_sm-3.1.0')
 
+
 ################################################################################
 #   Read CSV data file
 ################################################################################
@@ -61,6 +63,14 @@ print("We look at a sample of the data: \n", emails_df.head(10))
 print(emails_df["message"][8]) # "X-From" and "X-To" field corresponds to the "From" and "To", but more explicit
 print(emails_df["message"][88]) # "Subject" field seems to be blank
 print(emails_df["message"][888]) # email with several recipients (sent to an email group)
+
+
+################################################################################
+#   Feature engineering - extract critical data points from email messages
+################################################################################
+
+emails_df["message"][88]
+
 
 
 '''
