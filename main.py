@@ -18,8 +18,18 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 
-# - import packages for visualizations
+# - import packages for NLP
+'''
+- for the installation of "en_core_web_sm", we use the following command in terminal
+- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.1.0/en_core_web_sm-3.1.0.tar.gz
+- the file was then downloaded to this folder: /home/kelvinhwee/.cache/pip/wheels/62/79/40/648305f0a2cd1fdab236bd6764ba467437c5fae2a925768153
+- we copied the file 
+'''
 
+import spacy
+nlp = spacy.load('en_core_web_sm')
+import os
+os.getcwd()
 
 # - other configurations
 pd.set_option("display.max_column", None)
