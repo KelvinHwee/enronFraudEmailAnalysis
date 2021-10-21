@@ -34,6 +34,7 @@ Pillow==8.4.0
 preshed==3.0.5
 prompt-toolkit==3.0.20
 ptyprocess==0.7.0
+pyarrow==5.0.0
 pydantic==1.8.2
 Pygments==2.10.0
 pyparsing==2.4.7

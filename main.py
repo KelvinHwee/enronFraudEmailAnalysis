@@ -12,12 +12,12 @@ We attempt to use multiple linear regression models to model the insurance premi
 # - import basic python packages
 import warnings
 import tkinter  # to show plot in Pycharm
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # - import packages for data manipulations
 import numpy as np
 import pandas as pd
-
 
 # - import packages for visualisation
 from pyvis.network import Network
@@ -33,9 +33,8 @@ import matplotlib.pyplot as plt
 - (look out for the installation completion message in the terminal)
 - we copied the zipped file, and extracted the "en_core_web_sm-3.1.0" folder (containing the "config.cfg" file) into the 
 '''
-
 import spacy
-from spacy.lang.en import English
+import re
 
 # - other configurations
 pd.set_option("display.max_column", None)
@@ -43,6 +42,9 @@ source_filepath = '/home/kelvinhwee/PycharmProjects/sourceFiles'
 
 # - we load the spacy trained pipelines (for English); this is an English pipeline optimized for CPU
 nlp = spacy.load('en_core_web_sm-3.1.0')
+
+# - packages created
+
 
 
 ################################################################################
@@ -55,21 +57,104 @@ nlp = spacy.load('en_core_web_sm-3.1.0')
 - we note that there are only two columes, "file" and "message"
 '''
 
-#- reading in of data
-emails_df = pd.read_csv(source_filepath + '/emails.csv')
+# # - read in the CSV data
+# emails_df = pd.read_csv(source_filepath + '/emails.csv')
+#
+# # - read in the sample CSV data
+# import random
+# sample_vals = random.sample(list(range(emails_df.shape[0])), 1000)
+# emails_df.loc[sample_vals].to_csv(source_filepath + '/sample_emails.csv')
+
+emails_df = pd.read_csv(source_filepath + '/sample_emails.csv')
 print("We look at a sample of the data: \n", emails_df.head(10))
 
-#- we take a look at some specific instances of "message"
-print(emails_df["message"][8]) # "X-From" and "X-To" field corresponds to the "From" and "To", but more explicit
-print(emails_df["message"][88]) # "Subject" field seems to be blank
-print(emails_df["message"][888]) # email with several recipients (sent to an email group)
 
+# - we take a look at some specific instances of "message"
+print(emails_df["message"][8])  # "X-From" and "X-To" field corresponds to the "From" and "To", but more explicit
+print(emails_df["message"][88])  # "Subject" field seems to be blank
+# print(emails_df["message"][888])  # email with several recipients (sent to an email group)
 
 ################################################################################
 #   Feature engineering - extract critical data points from email messages
 ################################################################################
 
-emails_df["message"][88]
+# - replace some characters
+for i in range(emails_df.shape[0]):
+    temp_text = emails_df["message"][i]
+    new_text = temp_text.replace("\n ", " ")  # some "\n " in subject; , clean them to space character
+    # new_text = new_text.replace("\n\n", "\n")  # dropped this; the one after "filename" always has double "\n"
+    new_text = new_text.replace("Re: ", "")  # some "Re: " in subject; , clean them to blanks
+    new_text = new_text.replace("Fw: ", "")  # some "Fw: " in subject; , clean them to blanks
+    new_text = new_text.replace("\n\t", "") # very long recipient list has "\n\t"; clean them to blanks
+    new_text = new_text.replace(" : ", "") # some ":" in subject; , clean them to blanks
+    new_text = new_text.replace("[IMAGE]", "") # some "[IMAGE]" tags; , clean them to blanks
+    emails_df.loc[i, "message"] = new_text
+
+# - we collate the list of "keys"
+keys_list = ['Message-ID', 'Date', 'From', 'To', 'Subject', 'Cc', 'Mime-Version', 'Content-Type',
+             'Content-Transfer-Encoding','Bcc','X-From','X-To','X-cc', 'X-bcc', 'X-Folder', 'X-Origin', 'X-FileName']
+
+
+# - create dictionary (using dictionary comprehension) to do "conversion" later on (you will see)
+keys_dict = {i:[k, len(k)] for i, k in enumerate(keys_list)}
+
+# - we try to do a batch-wise extraction of the email contents based on the placeholders e.g. "To", "From", "Subject"
+list_of_dict = []
+for i in range(emails_df.shape[0]):
+
+    email_dict = {} # empty dictionary to store the key-value pair
+    temp_str = emails_df["message"][i].split("\n") # assign string to variable; so can insert values to specific place
+
+    # this step uses the above created dictionary to "impute" keys if there are missing key values, e.g. "To", "Cc"
+    for pos in range(len(keys_list)):
+        if temp_str[pos][0:len(keys_dict[pos][0])] != keys_dict[pos][0]:
+            temp_str.insert(pos, str(keys_dict[pos][0]) + ': ')
+
+    # this step performs the split and extract the key-value pair for the standard known field headers
+    for j in range(0, 17): # i = 27
+        key = temp_str[j].split(":")[0]
+        val = ':'.join(temp_str[j].split(":")[1:]).strip()
+        email_dict[key] = val
+
+    # this step saves the body of the text; we apply some regex logic
+    text_body = temp_str[17: ]
+    text_body = list(set(text_body))
+    text_body = " ".join([text for text in text_body]).strip()
+
+    # regex logic
+    clean_html_tags = re.compile("<.*?>|&nbsp;")
+    clean_multi_space = re.compile("[\s]{2,}")
+    clean_field_headers = re.compile('|'.join([item + ":" for item in keys_list]))
+    clean_emails = re.compile("[\w]+[\W]*[\w]+@[\w.]+")
+    clean_symbols = re.compile("[-]{2,}")
+    clean_numbers = re.compile("\B[\d-]+\B")
+
+    # apply regex logic
+    text_body = re.sub(clean_field_headers, "", text_body)
+    text_body = re.sub(clean_html_tags, "", text_body)
+    text_body = re.sub(clean_emails, "", text_body)
+    text_body = re.sub(clean_symbols, " ", text_body)
+    text_body = re.sub(clean_numbers, "", text_body)
+    text_body = re.sub(clean_multi_space, " ", text_body)
+
+
+    # this step saves the email body text as a value to the key named "body"
+    '''
+    - remove all field headers
+    - remove all symbols, emails, time, date
+    '''
+    email_dict["body"] = text_body
+
+    # append the dictionary to a list, and later store as a dataframe
+    list_of_dict.append(email_dict)
+
+
+emails_df_feat = pd.DataFrame(list_of_dict)
+emails_df_feat.head()
+
+print(emails_df_feat.loc[0,"body"])
+emails_df.loc[0,"message"]
+
 
 
 
@@ -79,11 +164,7 @@ if an email contains a preceding email, can we find that email somewhere else?
 
 doc = nlp(emails_df["message"][888])
 for tok in doc:
-  print(tok.text, "...", tok.dep_)
-
-
-
-
+    print(tok.text, "...", tok.dep_)
 
 '''
 scattertext === https://github.com/JasonKessler/scattertext
