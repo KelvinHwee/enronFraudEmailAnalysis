@@ -94,13 +94,15 @@ for i in range(emails_df.shape[0]):
 keys_list = ['Message-ID', 'Date', 'From', 'To', 'Subject', 'Cc', 'Mime-Version', 'Content-Type',
              'Content-Transfer-Encoding','Bcc','X-From','X-To','X-cc', 'X-bcc', 'X-Folder', 'X-Origin', 'X-FileName']
 
+fields_list = keys_list + ["Sent"] # to add in additional fields to clean (for RegEx later)
+fields_list_plus = fields_list + [i.lower() for i in fields_list] # include variations of 'lower case'
 
 # - create dictionary (using dictionary comprehension) to do "conversion" later on (you will see)
 keys_dict = {i:[k, len(k)] for i, k in enumerate(keys_list)}
 
 # - we try to do a batch-wise extraction of the email contents based on the placeholders e.g. "To", "From", "Subject"
 list_of_dict = []
-for i in range(emails_df.shape[0]):
+for i in range(emails_df.shape[0]): # i=4
 
     email_dict = {} # empty dictionary to store the key-value pair
     temp_str = emails_df["message"][i].split("\n") # assign string to variable; so can insert values to specific place
@@ -111,30 +113,51 @@ for i in range(emails_df.shape[0]):
             temp_str.insert(pos, str(keys_dict[pos][0]) + ': ')
 
     # this step performs the split and extract the key-value pair for the standard known field headers
-    for j in range(0, 17): # i = 27
+    for j in range(0, 17):
         key = temp_str[j].split(":")[0]
         val = ':'.join(temp_str[j].split(":")[1:]).strip()
         email_dict[key] = val
 
     # this step saves the body of the text; we apply some regex logic
     text_body = temp_str[17: ]
-    text_body = list(set(text_body))
-    text_body = " ".join([text for text in text_body]).strip()
+    # text_body = list(set(text_body))
+    text_body = " ".join([text for text in text_body]).strip() # joins back all elements into a single string
 
     # regex logic
-    clean_html_tags = re.compile("<.*?>|&nbsp;")
+    clean_html_tags = re.compile("<[/]*.*?>|&nbsp;")
     clean_multi_space = re.compile("[\s]{2,}")
-    clean_field_headers = re.compile('|'.join([item + ":" for item in keys_list]))
-    clean_emails = re.compile("[\w]+[\W]*[\w]+@[\w.]+")
-    clean_symbols = re.compile("[-]{2,}")
-    clean_numbers = re.compile("\B[\d-]+\B")
+    clean_field_headers = re.compile('|'.join([item + ":" for item in fields_list_plus]))
+    clean_emails = re.compile("[\w._]+@[\w.]+")
+    clean_fwds = re.compile("[-]{2,}.*?[-]{2,}") # cleans the "Forwarded by" in between the long dashes
+    clean_dashes = re.compile("[-]{2,}")
+    clean_transmission_warn = re.compile(r"The information.*?any computer.") # cleans warning texts
+    clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+") # for datetime format DD/MM/YYYY XX:XX:XX AM/PM
+    clean_multi_symbols = re.compile("[>,(]+\s+[>,(]+") # e.g. "> >", ", , ", ", ("
+    clean_addr_code = re.compile("[, ]*[A-Z]{2}\s+[\d]{5}")  # cleans ", TX 77082"
+    clean_phone_fax = re.compile("[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*") # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
+    clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}") # (281) 558-9198
+    clean_link = re.compile(r"http[s]*://+[\w]+[.][\w]+[.][\w]+") # e.g. http://explorer.msn.com
+    # clean_numbers = re.compile("\B[\d-]+\B")
+    # clean_datetime = re.compile("\d+/\d+/\d+\s+\d+:\d+:\d+\s+[AMPM]+") # for datetime format DD/MM/YYYY XX:XX:XX AM/PM
+    # clean_fwds = re.compile("[-]{2,}[\s]+[\w\s/:](.*?)+[-]{2,}") # cleans the "Forwarded by" in between the long dashes
+
+    # Other things to clean
+    # Staff Meeting - Mt. Ranier 5/30/2001 Time: 1:00 PM - 3:00 PM (Central Standard Time)
+
+
 
     # apply regex logic
     text_body = re.sub(clean_field_headers, "", text_body)
     text_body = re.sub(clean_html_tags, "", text_body)
     text_body = re.sub(clean_emails, "", text_body)
-    text_body = re.sub(clean_symbols, " ", text_body)
-    text_body = re.sub(clean_numbers, "", text_body)
+    text_body = re.sub(clean_fwds, " ", text_body)
+    text_body = re.sub(clean_dashes, " ", text_body)
+    text_body = re.sub(clean_transmission_warn, " ", text_body)
+    text_body = re.sub(clean_datetime, " ", text_body)
+    text_body = re.sub(clean_link, " ", text_body)
+    text_body = re.sub(clean_phone_fax, " ", text_body)
+    text_body = re.sub(clean_addr_code, " ", text_body)
+    text_body = re.sub(clean_multi_symbols, " ", text_body)
     text_body = re.sub(clean_multi_space, " ", text_body)
 
 
@@ -152,14 +175,27 @@ for i in range(emails_df.shape[0]):
 emails_df_feat = pd.DataFrame(list_of_dict)
 emails_df_feat.head()
 
-print(emails_df_feat.loc[0,"body"])
-emails_df.loc[0,"message"]
+print(emails_df_feat.loc[9, "body"])
+print(emails_df.loc[9, "message"])
+print(emails_df_feat.loc[emails_df_feat["X-From"].str.contains("Walker"), "Subject"])
+
+emails_df.loc[emails_df.message.str.contains("Original Message"),"message"]
+
+
+re.findall("[A-Z]{2}\s+[\d]{5}", "TX 77082 (281) 558-9198")
+re.findall("[\W\~\s]+\s+[\W+]", "on Trail Houston  (281) 558-9198  De")
+re.findall("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}", "(281) 558-9198")
+
+
+
+
 
 
 
 
 '''
-if an email contains a preceding email, can we find that email somewhere else?
+if an email contains forwarded messages, it seems like the original messages are not found in other parts of the data
+"emails_df_feat.Subject.value_counts().head(20)" does not show much repeats
 '''
 
 doc = nlp(emails_df["message"][888])
