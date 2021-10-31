@@ -200,12 +200,35 @@ emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 - the "source" will comprise the "From" domains and the "destination" will comprise the others, i.e. "To", "Cc", "Bcc"
 '''
 
-source_domains = emails_df_feat.From_domain
-dest_domains = [list(set(emails_df_feat.loc[num, "To_domain"] +
-                emails_df_feat.loc[num, "Cc_domain"] +
-                emails_df_feat.loc[num, "Bcc_domain"]))
-                for num in range(emails_df_feat.shape[0])]
+# - create the dataframe that will contain the "source" and "destination"
+source_domains = emails_df_feat.From_domain.to_list()
+dest_domains   = [list(set(emails_df_feat.loc[num, "To_domain"] +
+                           emails_df_feat.loc[num, "Cc_domain"] +
+                           emails_df_feat.loc[num, "Bcc_domain"]))
+                           for num in range(emails_df_feat.shape[0])]
 
+source_dest_df1 = pd.DataFrame({'source': source_domains, 'destination': dest_domains})
+source_dest_df1['count_dest'] = source_dest_df1.destination.apply(lambda x : len(x))
+print(source_dest_df1.head(15))
+
+# - we want to drop those rows where there is no 'destination'
+source_dest_df2 = source_dest_df1.loc[source_dest_df1.count_dest > 0, :]
+source_dest_df2 = source_dest_df2.reset_index(drop = True)
+
+# - we want to duplicate the "source" if there are multiple "destinations" for purpose of plotting Sankey diagram
+# - so that we can get the 1-to-1 relationship mapping, from "source" to "destination"
+source_dest_df2["expanded_source"] = [source_dest_df2.loc[num, "source"] * source_dest_df2.loc[num, "count_dest"]
+                                      for num in range(source_dest_df2.shape[0])]
+
+source_dest_df3 = source_dest_df2.loc[:,["expanded_source","destination"]]
+
+print(source_dest_df3.head(15))
+
+# - split up the lists (especially rows with multiple "sources" and "destinations")
+
+
+
+source_dest_df2.apply(lambda x : x[0] * x[2])
 
 
 
