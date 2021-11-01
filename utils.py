@@ -69,3 +69,7 @@ def extract_domain(df, col_name):
 #
 #     return list_of_domains
 
+# dest_domains   = [list(set(emails_df_feat.loc[num, "To_domain"] +
+#                            emails_df_feat.loc[num, "Cc_domain"] +
+#                            emails_df_feat.loc[num, "Bcc_domain"]))
+#                            for num in range(emails_df_feat.shape[0])]

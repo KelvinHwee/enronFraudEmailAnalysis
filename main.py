@@ -19,9 +19,13 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 from datetime import date, datetime
-from utils import extract_domain
+from collections import Counter
+import random
 
 # - import packages for visualisation
+import plotly.graph_objects as go
+import plotly.io as pio
+pio.renderers.default = "browser"
 from pyvis.network import Network
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -46,6 +50,7 @@ source_filepath = '/home/kelvinhwee/PycharmProjects/sourceFiles'
 nlp = spacy.load('en_core_web_sm-3.1.0')
 
 # - packages created
+from utils import extract_domain
 
 
 ########################################################################################################################
@@ -132,7 +137,7 @@ for i in range(emails_df.shape[0]): # i=4
     clean_fwds = re.compile("[-]{2,}.*?[-]{2,}") # cleans the "Forwarded by" in between the long dashes
     clean_dashes = re.compile("[-]{2,}")
     clean_transmission_warn = re.compile(r"The information.*?any computer.") # cleans warning texts
-    clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+") # for datetime format DD/MM/YYYY XX:XX:XX AM/PM
+    clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+") # for format DD/MM/YYYY XX:XX:XX AM/PM
     clean_multi_symbols = re.compile("[>,(]+\s+[>,(]+") # e.g. "> >", ", , ", ", ("
     clean_addr_code = re.compile("[, ]*[A-Z]{2}\s+[\d]{5}")  # cleans ", TX 77082"
     clean_phone_fax = re.compile("[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*") # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
@@ -189,23 +194,15 @@ emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
 
 ########################################################################################################################
-#   Find anomalous relationships - spot associations based on email addresses
+#   Find anomalous relationships - spot associations based on email address domains rather than names
 ########################################################################################################################
 
 #=== we use different ways to plot the associations (Sankey diagram, network graphs)
-
 #--- we try to plot the Sankey diagram
-'''
-- we determine the "source" and "destinations" and we do this using the "email domain"
-- the "source" will comprise the "From" domains and the "destination" will comprise the others, i.e. "To", "Cc", "Bcc"
-'''
 
 # - create the dataframe that will contain the "source" and "destination"
 source_domains = emails_df_feat.From_domain.to_list()
-dest_domains   = [list(set(emails_df_feat.loc[num, "To_domain"] +
-                           emails_df_feat.loc[num, "Cc_domain"] +
-                           emails_df_feat.loc[num, "Bcc_domain"]))
-                           for num in range(emails_df_feat.shape[0])]
+dest_domains   = [list(set(emails_df_feat.loc[num, "To_domain"])) for num in range(emails_df_feat.shape[0])] # de-duplicate
 
 source_dest_df1 = pd.DataFrame({'source': source_domains, 'destination': dest_domains})
 source_dest_df1['count_dest'] = source_dest_df1.destination.apply(lambda x : len(x))
@@ -220,15 +217,66 @@ source_dest_df2 = source_dest_df2.reset_index(drop = True)
 source_dest_df2["expanded_source"] = [source_dest_df2.loc[num, "source"] * source_dest_df2.loc[num, "count_dest"]
                                       for num in range(source_dest_df2.shape[0])]
 
-source_dest_df3 = source_dest_df2.loc[:,["expanded_source","destination"]]
-
+source_dest_df3 = source_dest_df2.loc[:,["expanded_source", "destination"]]
 print(source_dest_df3.head(15))
 
-# - split up the lists (especially rows with multiple "sources" and "destinations")
+# - split up the lists (especially rows with multiple "sources" and "destinations") for purpose of Sankey diagram
+sankey_source = []
+sankey_destin = []
+for num in range(source_dest_df3.shape[0]):
+
+    s1 = source_dest_df3.expanded_source[num]
+    d1 = source_dest_df3.destination[num]
+
+    if len(s1) == 1: # to handle the singular sources / destinations within the list
+        sankey_source.append(s1[0])
+        sankey_destin.append(d1[0])
+
+    else: # to handle multiple sources / destinations within the same list
+        for sub_num in range(len(s1)):
+            sankey_source.append(s1[sub_num])
+            sankey_destin.append(d1[sub_num])
+
+# - obtain source-to-destination tuple mapping to count occurrences of mapping for computing "value" field for Sankey
+source_dest_map = tuple(zip(sankey_source, sankey_destin))
+counter = Counter(list(source_dest_map))
+
+# - get a de-duplicated source_dest_map (to drop the repeats; above non-deduplicated map is required only for counting)
+source_dest_map_dedup = sorted(tuple(set(source_dest_map)))
+
+# - obtain a dictionary to map the domain names into indices for purpose of plotting Sankey diagram
+full_list_of_domains = sorted(list(set(sankey_source + sankey_destin)))
+domain_dict = {domain : num for num, domain in enumerate(full_list_of_domains)} # dictionary comprehension on key-value
+
+# - create the fields required for the Sankey diagram
+s2 = [] # to be directly used in plotting the Sankey diagram
+d2 = [] # to be directly used in plotting the Sankey diagram
+v2 = [] # to be directly used in plotting the Sankey diagram
+for i in range(len(source_dest_map_dedup)):
+    tag1 = source_dest_map_dedup[i]
+    s2.append(domain_dict[tag1[0]])
+    d2.append(domain_dict[tag1[1]])
+    v2.append(counter[tag1[0], tag1[1]])
 
 
+# - plot the sankey diagram
+random.seed(21)
+sample_vals = random.sample(range(0, len(s2)), 30)
 
-source_dest_df2.apply(lambda x : x[0] * x[2])
+fig1 = go.Figure(data=[go.Sankey(
+    node = dict(
+      pad = 20, thickness = 20, line = dict(color = "black", width = 0.5),
+      label = full_list_of_domains, color = "#3944BC"
+    ),
+    link = dict(source = [s2[i] for i in sample_vals],
+                target = [d2[i] for i in sample_vals],
+                value = [v2[i] for i in sample_vals],
+                color = "#A1E3FF"
+  ))])
+
+fig1.update_layout(title_text="Sankey Diagram to show associations based on domains", font_size=10)
+fig1.show()
+
 
 
 
