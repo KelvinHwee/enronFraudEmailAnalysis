@@ -2,7 +2,9 @@
 #   Background of code
 #######################################################################################################################
 '''
-We attempt to use multiple linear regression models to model the insurance premium prediction problem
+- We attempt to discover or mine information from the email dataset in different ways / visualization methods
+- if an email contains forwarded messages, it seems like the original messages are not found in other parts of the data
+"emails_df_feat.Subject.value_counts().head(20)" does not show much repeats
 '''
 
 #######################################################################################################################
@@ -29,6 +31,7 @@ pio.renderers.default = "browser"
 from pyvis.network import Network
 import networkx as nx
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 # - import packages for NLP
 '''
@@ -39,8 +42,11 @@ import matplotlib.pyplot as plt
 - (look out for the installation completion message in the terminal)
 - we copied the zipped file, and extracted the "en_core_web_sm-3.1.0" folder (containing the "config.cfg" file) into the 
 '''
-import spacy
 import re
+import spacy
+from spacy import displacy
+from spacy.matcher import Matcher
+from spacy.tokens import Span
 
 # - other configurations
 pd.set_option("display.max_column", None)
@@ -194,7 +200,7 @@ emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
 
 ########################################################################################################################
-#   Find anomalous relationships - spot associations based on email address domains rather than names
+#   Find relationships - spot associations based on email address domains rather than names
 ########################################################################################################################
 
 #=== we use different ways to plot the associations (Sankey diagram, network graphs)
@@ -258,34 +264,38 @@ for i in range(len(source_dest_map_dedup)):
     d2.append(domain_dict[tag1[1]])
     v2.append(counter[tag1[0], tag1[1]])
 
-
 # - plot the sankey diagram
-random.seed(21)
-sample_vals = random.sample(range(0, len(s2)), 30)
+random.seed(24)
+sample_vals = random.sample(range(0, len(s2)), 120)
 
 fig1 = go.Figure(data=[go.Sankey(
     node = dict(
-      pad = 20, thickness = 20, line = dict(color = "black", width = 0.5),
+      pad = 5, thickness = 20, line = dict(color = "black", width = 0.5),
       label = full_list_of_domains, color = "#3944BC"
     ),
     link = dict(source = [s2[i] for i in sample_vals],
                 target = [d2[i] for i in sample_vals],
                 value = [v2[i] for i in sample_vals],
-                color = "#A1E3FF"
+                color = "#F699CF"
   ))])
 
 fig1.update_layout(title_text="Sankey Diagram to show associations based on domains", font_size=10)
 fig1.show()
 
 
-
+########################################################################################################################
+#   Knowledge graph - to mine information from texts
+########################################################################################################################
+'''
+- building graphs requires nodes and edges; same goes for knowledge graphs
+- the nodes are going to be the entities mentioned in the sentences; edges are the relationships connecting the nodes
+- there are entities whose names made up of multiple words; these words are "compounds" and we are to put them together
 
 '''
-if an email contains forwarded messages, it seems like the original messages are not found in other parts of the data
-"emails_df_feat.Subject.value_counts().head(20)" does not show much repeats
-'''
 
-doc = nlp(emails_df["message"][888])
+
+
+doc = nlp(emails_df_feat["body"][888])
 for tok in doc:
     print(tok.text, "...", tok.dep_)
 
