@@ -108,7 +108,8 @@ keys_list = ['Message-ID', 'Date', 'From', 'To', 'Subject', 'Cc', 'Mime-Version'
              'Content-Transfer-Encoding','Bcc','X-From','X-To','X-cc', 'X-bcc', 'X-Folder', 'X-Origin', 'X-FileName']
 
 fields_list = keys_list + ["Sent"] # to add in additional fields to clean (for RegEx later)
-fields_list_plus = fields_list + [i.lower() for i in fields_list] # include variations of 'lower case'
+fields_list_plus = fields_list + [i.lower() for i in fields_list] \
+                   + [i.upper() for i in fields_list] # include variations of lower and upper case
 
 # - create dictionary (using dictionary comprehension) to do "conversion" later on (you will see)
 keys_dict = {i:[k, len(k)] for i, k in enumerate(keys_list)}
@@ -140,15 +141,18 @@ for i in range(emails_df.shape[0]): # i=4
     clean_multi_space = re.compile("[\s]{2,}")
     clean_field_headers = re.compile('|'.join([item + ":" for item in fields_list_plus]))
     clean_emails = re.compile("[\w._]+@[\w.]+")
-    clean_fwds = re.compile("[-]{2,}.*?[-]{2,}") # cleans the "Forwarded by" in between the long dashes
+    clean_fwds = re.compile("[-_]{2,}.*?[-_]{2,}|FW:|Fwd:|RE:") # cleans "Forwarded by" in between long dashes and others
+    clean_unintended_sends = re.compile("[-_*]{2,}.*?[-_*]{2,}")
     clean_dashes = re.compile("[-]{2,}")
     clean_transmission_warn = re.compile(r"The information.*?any computer.") # cleans warning texts
     clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+") # for format DD/MM/YYYY XX:XX:XX AM/PM
-    clean_multi_symbols = re.compile("[>,(]+\s+[>,(]+") # e.g. "> >", ", , ", ", ("
+    clean_multi_symbols = re.compile("[>,(\"\'\\!.\[\]-]+\s?[>,(\"\'\\!.\[\]-]+") # e.g. "> >", ", , ", ", ("
     clean_addr_code = re.compile("[, ]*[A-Z]{2}\s+[\d]{5}")  # cleans ", TX 77082"
     clean_phone_fax = re.compile("[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*") # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
-    clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}") # (281) 558-9198
-    clean_link = re.compile(r"http[s]*://+[\w]+[.][\w]+[.][\w]+") # e.g. http://explorer.msn.com
+    clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}") # (281) 558-9198, (713) 670-2457
+    clean_link = re.compile(r"[http]*[https]*[:/]*/?[\w]+[.][\w]+.*[.][\w]+") # e.g. http://explorer.msn.com, https://explorer.msn.com.net"
+    clean_email_codes = re.compile("[=][\d]+") # clear email codes "=19", "=20"
+    clean_very_long_text = re.compile("[\w+]{20,}")
     # Other things to clean: Staff Meeting - Mt. Ranier 5/30/2001 Time: 1:00 PM - 3:00 PM (Central Standard Time)
 
     # apply regex logic
@@ -156,17 +160,23 @@ for i in range(emails_df.shape[0]): # i=4
     text_body = re.sub(clean_html_tags, "", text_body)
     text_body = re.sub(clean_emails, "", text_body)
     text_body = re.sub(clean_fwds, " ", text_body)
+    text_body = re.sub(clean_unintended_sends, " ", text_body)
     text_body = re.sub(clean_dashes, " ", text_body)
     text_body = re.sub(clean_transmission_warn, " ", text_body)
     text_body = re.sub(clean_datetime, " ", text_body)
     text_body = re.sub(clean_link, " ", text_body)
     text_body = re.sub(clean_phone_fax, " ", text_body)
+    text_body = re.sub(clean_phone_ctrycode, " ", text_body)
     text_body = re.sub(clean_addr_code, " ", text_body)
+    text_body = re.sub(clean_email_codes, "", text_body)
+    text_body = re.sub(clean_very_long_text, "", text_body)
+    text_body = re.sub(clean_multi_symbols, " ", text_body)
+    text_body = re.sub(clean_multi_space, " ", text_body)
     text_body = re.sub(clean_multi_symbols, " ", text_body)
     text_body = re.sub(clean_multi_space, " ", text_body)
 
     # this step saves the email body text as a value to the key named "body"
-    email_dict["body"] = text_body
+    email_dict["body"] = text_body.strip()
 
     # append the dictionary to a list, and later store as a dataframe
     list_of_dict.append(email_dict)
@@ -291,14 +301,29 @@ fig1.show()
 - the nodes are going to be the entities mentioned in the sentences; edges are the relationships connecting the nodes
 - there are entities whose names made up of multiple words; these words are "compounds" and we are to put them together
 
+- combine all the email bodies into one block
+- convert the email bodies into sentences
 '''
+full_email_doc = nlp(' '.join(emails_df_feat.body.to_list()))
 
 
 
 doc = nlp(emails_df_feat["body"][888])
+doc = nlp("National Journal\'s CongressDaily Issue October 29, 2001 -=-=-=-=-=-=-=- BUDGET Administration Says FY01")
 for tok in doc:
     print(tok.text, "...", tok.dep_)
+
+tok.dep_.endswith("punct")
+
+
 
 '''
 scattertext === https://github.com/JasonKessler/scattertext
 '''
+
+
+########################################################################################################################
+#   Network graph to show the connections between various parties
+########################################################################################################################
+
+

@@ -1,12 +1,12 @@
-################################################################################
+########################################################################################################################
 #   Basic required packages
-################################################################################
+########################################################################################################################
 import re
 
 
-################################################################################
-#   create correlation plots on the oversampled training data
-################################################################################
+########################################################################################################################
+#   create function to extract the domain names from the email addresses
+########################################################################################################################
 
 def extract_domain(df, col_name):
     list_of_domains = []
@@ -18,6 +18,81 @@ def extract_domain(df, col_name):
             list_of_domains.append(list()) # this appends an empty list
 
     return list_of_domains
+
+
+########################################################################################################################
+#   function to extract entities for Knowledge Graph
+########################################################################################################################
+# taken from: https://www.analyticsvidhya.com/blog/2019/10/how-to-build-knowledge-graph-text-using-spacy/
+
+def get_entities(sent):
+    ## chunk 1
+    ent1 = ""
+    ent2 = ""
+
+    prv_tok_dep = ""  # dependency tag of previous token in the sentence
+    prv_tok_text = ""  # previous token in the sentence
+
+    prefix = ""
+    modifier = ""
+
+    #############################################################
+
+    for tok in nlp(sent):
+        ## chunk 2
+        # if token is a punctuation mark then move on to the next token
+        if tok.dep_ != "punct":
+            # check: token is a compound word or not
+            if tok.dep_ == "compound":
+                prefix = tok.text
+                # if the previous word was also a 'compound' then add the current word to it
+                if prv_tok_dep == "compound":
+                    prefix = prv_tok_text + " " + tok.text
+
+            # check: token is a modifier or not
+            if tok.dep_.endswith("mod") == True:
+                modifier = tok.text
+                # if the previous word was also a 'compound' then add the current word to it
+                if prv_tok_dep == "compound":
+                    modifier = prv_tok_text + " " + tok.text
+
+            ## chunk 3
+            if tok.dep_.find("subj") == True:
+                ent1 = modifier + " " + prefix + " " + tok.text
+                prefix = ""
+                modifier = ""
+                prv_tok_dep = ""
+                prv_tok_text = ""
+
+                ## chunk 4
+            if tok.dep_.find("obj") == True:
+                ent2 = modifier + " " + prefix + " " + tok.text
+
+            ## chunk 5
+            # update variables
+            prv_tok_dep = tok.dep_
+            prv_tok_text = tok.text
+    #############################################################
+
+    return [ent1.strip(), ent2.strip()]
+
+
+
+########################################################################################################################
+#   function to extract relations for Knowledge Graph
+########################################################################################################################
+'''
+- taken from: https://www.analyticsvidhya.com/blog/2019/10/how-to-build-knowledge-graph-text-using-spacy/
+- to extract the relation, we have to find the "ROOT" of the sentence (also is the verb of the sentence)
+'''
+
+
+
+
+
+
+
+
 
 
 
@@ -44,8 +119,10 @@ def extract_domain(df, col_name):
 #     keys_dict[i] = [k, len(k)]
 
 # clean_numbers = re.compile("\B[\d-]+\B")
-    # clean_datetime = re.compile("\d+/\d+/\d+\s+\d+:\d+:\d+\s+[AMPM]+") # for datetime format DD/MM/YYYY XX:XX:XX AM/PM
-    # clean_fwds = re.compile("[-]{2,}[\s]+[\w\s/:](.*?)+[-]{2,}") # cleans the "Forwarded by" in between the long dashes
+# clean_datetime = re.compile("\d+/\d+/\d+\s+\d+:\d+:\d+\s+[AMPM]+") # for datetime format DD/MM/YYYY XX:XX:XX AM/PM
+# clean_fwds = re.compile("[-]{2,}[\s]+[\w\s/:](.*?)+[-]{2,}") # cleans the "Forwarded by" in between the long dashes
+# clean_link = re.compile(r"http[s]*://+[\w]+[.][\w]+[.][\w]+") # e.g. http://explorer.msn.com
+# clean_multi_symbols = re.compile("[>,(]+\s?[>,(]+") # e.g. "> >", ", , ", ", ("
 
 # re.findall(r"@([\w-]+).[\w]+", "billw@calpine.no.com")
 # re.findall(r"@(.*)[.]", "billw@calpine.no.gogo.com")
