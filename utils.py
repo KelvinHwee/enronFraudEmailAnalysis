@@ -2,6 +2,10 @@
 #   Basic required packages
 ########################################################################################################################
 import re
+from spacy.matcher import Matcher
+from spacy.tokens import Span
+import spacy
+nlp = spacy.load('en_core_web_sm-3.1.0')
 
 
 ########################################################################################################################
@@ -23,7 +27,11 @@ def extract_domain(df, col_name):
 ########################################################################################################################
 #   function to extract entities for Knowledge Graph
 ########################################################################################################################
-# taken from: https://www.analyticsvidhya.com/blog/2019/10/how-to-build-knowledge-graph-text-using-spacy/
+'''
+- taken from: https://www.analyticsvidhya.com/blog/2019/10/how-to-build-knowledge-graph-text-using-spacy/
+- there are entities whose names made up of multiple words; these words are "compounds" and we are to put them together 
+'''
+
 
 def get_entities(sent):
     ## chunk 1
@@ -87,6 +95,27 @@ def get_entities(sent):
 '''
 
 
+def get_relation(sent):
+
+  doc = nlp(sent)
+
+  # Matcher class object
+  matcher = Matcher(nlp.vocab)
+
+  #define the pattern
+  pattern = [{'DEP':'ROOT'},
+            {'DEP':'prep','OP':"?"},
+            {'DEP':'agent','OP':"?"},
+            {'POS':'ADJ','OP':"?"}]
+
+  matcher.add("matching_1", None, pattern)
+
+  matches = matcher(doc)
+  k = len(matches) - 1
+
+  span = doc[matches[k][1]:matches[k][2]]
+
+  return(span.text)
 
 
 

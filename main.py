@@ -57,6 +57,7 @@ nlp = spacy.load('en_core_web_sm-3.1.0')
 
 # - packages created
 from utils import extract_domain
+from utils import get_relation, get_entities
 
 
 ########################################################################################################################
@@ -299,9 +300,7 @@ fig1.show()
 '''
 - building graphs requires nodes and edges; same goes for knowledge graphs
 - the nodes are going to be the entities mentioned in the sentences; edges are the relationships connecting the nodes
-- there are entities whose names made up of multiple words; these words are "compounds" and we are to put them together
 
-- combine all the email bodies into one block
 - convert the email bodies into sentences
 '''
 full_email_doc = nlp(' '.join(emails_df_feat.body.to_list()))
