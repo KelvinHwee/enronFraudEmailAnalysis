@@ -5,6 +5,7 @@ import re
 from spacy.matcher import Matcher
 from spacy.tokens import Span
 import spacy
+
 nlp = spacy.load('en_core_web_sm-3.1.0')
 
 
@@ -17,9 +18,9 @@ def extract_domain(df, col_name):
     for num in range(df.shape[0]):
         try:
             list_of_domains.append(list(set([re.findall(r"@(.*)[.]", i)[0]
-                                        for i in df.loc[num, col_name].split(",")])))
+                                             for i in df.loc[num, col_name].split(",")])))
         except:
-            list_of_domains.append(list()) # this appends an empty list
+            list_of_domains.append(list())  # this appends an empty list
 
     return list_of_domains
 
@@ -80,10 +81,8 @@ def get_entities(sent):
             # update variables
             prv_tok_dep = tok.dep_
             prv_tok_text = tok.text
-    #############################################################
 
     return [ent1.strip(), ent2.strip()]
-
 
 
 ########################################################################################################################
@@ -96,36 +95,21 @@ def get_entities(sent):
 
 
 def get_relation(sent):
+    doc = nlp(sent)
+    matcher = Matcher(nlp.vocab)  # Matcher class object
 
-  doc = nlp(sent)
+    # define the pattern; we can "print(spacy.explain("prep"))" to find out what the labels mean
+    # "prep" is prepositional modifier; other POS tags can be found: https://v2.spacy.io/api/annotation
+    pattern = [{'DEP': 'ROOT'}, {'DEP': 'prep', 'OP': "?"}, {'DEP': 'agent', 'OP': "?"}, {'POS': 'ADJ', 'OP': "?"}]
 
-  # Matcher class object
-  matcher = Matcher(nlp.vocab)
+    matcher.add("matching_1", [pattern])
 
-  #define the pattern
-  pattern = [{'DEP':'ROOT'},
-            {'DEP':'prep','OP':"?"},
-            {'DEP':'agent','OP':"?"},
-            {'POS':'ADJ','OP':"?"}]
+    matches = matcher(doc)
+    k = len(matches) - 1
 
-  matcher.add("matching_1", None, pattern)
+    span = doc[matches[k][1]:matches[k][2]]
 
-  matches = matcher(doc)
-  k = len(matches) - 1
-
-  span = doc[matches[k][1]:matches[k][2]]
-
-  return(span.text)
-
-
-
-
-
-
-
-
-
-
+    return span.text
 
 
 # def key_val(df, dict, i, j):
@@ -133,7 +117,6 @@ def get_relation(sent):
 #     val = ':'.join(df["message"][i].split("\n")[j].split(":")[1:]).strip()
 #
 #     return key, val
-
 
 
 # i = 77
@@ -179,3 +162,16 @@ def get_relation(sent):
 #                            emails_df_feat.loc[num, "Cc_domain"] +
 #                            emails_df_feat.loc[num, "Bcc_domain"]))
 #                            for num in range(emails_df_feat.shape[0])]
+
+# doc = nlp("John completed the task")
+# for tok in full_email_doc:
+#     print(tok.text, "...", tok.dep_)
+
+# test_doc = ' '.join(emails_df_feat.body.to_list())[1000:2500]
+# full_email_doc = nlp(test_doc)
+
+# entity_pairs = []
+# for i in tqdm(email_doc_sentences):
+#     ent = get_entities(i)
+#     if ent not in entity_pairs:
+#         entity_pairs.append(ent)

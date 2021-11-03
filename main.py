@@ -47,6 +47,9 @@ import spacy
 from spacy import displacy
 from spacy.matcher import Matcher
 from spacy.tokens import Span
+from nltk.tokenize import sent_tokenize
+import nltk
+nltk.download('punkt')
 
 # - other configurations
 pd.set_option("display.max_column", None)
@@ -54,6 +57,9 @@ source_filepath = '/home/kelvinhwee/PycharmProjects/sourceFiles'
 
 # - we load the spacy trained pipelines (for English); this is an English pipeline optimized for CPU
 nlp = spacy.load('en_core_web_sm-3.1.0')
+
+# - initialise the spacy Matcher with a vocab; matcher must always share the same vocab with the documents it operate on
+matcher = Matcher(nlp.vocab)
 
 # - packages created
 from utils import extract_domain
@@ -303,17 +309,45 @@ fig1.show()
 
 - convert the email bodies into sentences
 '''
-full_email_doc = nlp(' '.join(emails_df_feat.body.to_list()))
+# - create the required "document"; we further create sentence tokens to extract the entities and relationships
+full_email_doc = nlp(emails_df_feat.body.to_list())
+email_doc_sentences = sent_tokenize(' '.join(emails_df_feat.body.to_list()))
+
+# - extract the entities
+entity_pairs = [get_entities(i) for i in tqdm(email_doc_sentences)]
+print(pd.Series(entity_pairs).value_counts())
+
+# - extract the relationships
+relations = [get_relation(i) for i in tqdm(email_doc_sentences)]
+print(pd.Series(relations).value_counts().head(30))
+
+# - create the dataframe for Knowledge Graph
+source_kg = [s[0] for s in entity_pairs]
+destin_kg = [d[1] for d in entity_pairs]
+know_df = pd.DataFrame({'source':source_kg, 'destination':destin_kg, 'edge':relations})
+
+# - plot the Knowledge Graph
+# G_kg = nx.from_pandas_edgelist(know_df, "source", "destination", edge_attr = True, create_using = nx.MultiGraph())
+G_kg = nx.from_pandas_edgelist(know_df[know_df["edge"] == "contact"], "source", "destination",
+                               edge_attr = True, create_using = nx.MultiGraph())
+
+plt.figure(figsize=(12,12))
+pos = nx.spring_layout(G_kg)
+nx.draw(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
+plt.show()
+
+nt_know = Network()
+
+plt.figure(figsize=(12,12))
+pos = nx.spring_layout(G_kg)
+nx_know_graph = nx.draw(G_kg, with_labels=True, node_color='skyblue', pos = pos)
+nt_know.from_nx(nx_know_graph)
+nt_know.show()
+
+# testing
 
 
-
-doc = nlp(emails_df_feat["body"][888])
-doc = nlp("National Journal\'s CongressDaily Issue October 29, 2001 -=-=-=-=-=-=-=- BUDGET Administration Says FY01")
-for tok in doc:
-    print(tok.text, "...", tok.dep_)
-
-tok.dep_.endswith("punct")
-
+# testing - end
 
 
 '''
