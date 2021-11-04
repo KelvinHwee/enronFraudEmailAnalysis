@@ -313,12 +313,17 @@ fig1.show()
 full_email_doc = nlp(emails_df_feat.body.to_list())
 email_doc_sentences = sent_tokenize(' '.join(emails_df_feat.body.to_list()))
 
-# - extract the entities
-entity_pairs = [get_entities(i) for i in tqdm(email_doc_sentences)]
-print(pd.Series(entity_pairs).value_counts())
+# - extract the entities and relations (if the entity pair does not contain just a 'blank' entity)
+# - this for loop takes a while, we use TQDM here to track its progress
+entity_pairs = []
+relations = []
+for i in tqdm(email_doc_sentences):
+    if get_entities(i)[0] != '' and get_entities(i)[1] != '':
+        entity_pairs.append(get_entities(i))
+        relations.append(get_relation(i))
 
-# - extract the relationships
-relations = [get_relation(i) for i in tqdm(email_doc_sentences)]
+# - we print the top 30 entity pairs and top 30 relations; choose one to plot for the Knowledge Graph later
+print(pd.Series(entity_pairs).value_counts().head(30))
 print(pd.Series(relations).value_counts().head(30))
 
 # - create the dataframe for Knowledge Graph
@@ -340,9 +345,22 @@ nt_know = Network()
 
 plt.figure(figsize=(12,12))
 pos = nx.spring_layout(G_kg)
-nx_know_graph = nx.draw(G_kg, with_labels=True, node_color='skyblue', pos = pos)
-nt_know.from_nx(nx_know_graph)
+nt_know.from_nx(G_kg, with_labels=True, node_color='skyblue', pos = pos)
 nt_know.show()
+
+nxg = nx.complete_graph(5)
+nt_know.from_nx(nxg)
+nt_know.show("name.html")
+
+type(nxg)
+
+nxg = nx.draw(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
+nt_know.from_nx(nxg)
+nt_know.show("name.html")
+
+nxg = nx.empty_graph(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
+nt_know.from_nx(nxg)
+nt_know.show("name.html")
 
 # testing
 
