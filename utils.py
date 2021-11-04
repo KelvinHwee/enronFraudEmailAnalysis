@@ -1,6 +1,8 @@
 ########################################################################################################################
 #   Basic required packages
 ########################################################################################################################
+import pandas as pd
+from collections import Counter
 import re
 from spacy.matcher import Matcher
 from spacy.tokens import Span
@@ -32,7 +34,43 @@ def extract_domain(df, col_name):
 # - for cases where there is one source to multiple targets, the mapping will ensure that each target is mapped to the
 # - same source
 
+def one_to_one_mapping(source_list, dest_list):
 
+    df1 = pd.DataFrame({'source': source_list, 'destination': dest_list})
+    df1['count_dest'] = df1.destination.apply(lambda x: len(x))
+
+    # - we want to drop those rows where there is no 'destination'
+    df2 = df1.loc[df1.count_dest > 0, :]
+    df2 = df2.reset_index(drop=True)
+
+    df2["expanded_source"] = [df2.loc[num, 'source'] * df2.loc[num, "count_dest"] for num in range(df2.shape[0])]
+    df3 = df2.loc[:,["expanded_source", 'destination']]
+
+    # - split up the lists (especially rows with multiple "sources" and "destinations") for purpose of Sankey diagram
+    source = []
+    destin = []
+    for num in range(df3.shape[0]):
+
+        s1 = df3.expanded_source[num]
+        d1 = df3.destination[num]
+
+        if len(s1) == 1: # to handle the singular sources / destinations within the list
+            source.append(s1[0])
+            destin.append(d1[0])
+
+        else: # to handle multiple sources / destinations within the same list
+            for sub_num in range(len(s1)):
+                source.append(s1[sub_num])
+                destin.append(d1[sub_num])
+
+    # - obtain source-to-destination tuple mapping
+    source_dest_map = tuple(zip(source, destin))
+    counter = Counter(list(source_dest_map))
+
+    # - get a de-duplicated source_dest_map (drop repeats; above non-deduplicated map is required only for counting)
+    source_dest_map_dedup = sorted(tuple(set(source_dest_map)))
+
+    return source, destin, source_dest_map_dedup, counter
 
 
 ########################################################################################################################
@@ -238,3 +276,45 @@ def get_relation(sent):
 # G.add_edge('b','c',weight=100)
 # nt_know.from_nx(G)
 # nt_know.show("name2.html")
+
+
+# source_dest_df1 = pd.DataFrame({'source': source_domains, 'destination': dest_domains})
+# source_dest_df1['count_dest'] = source_dest_df1.destination.apply(lambda x : len(x))
+# print(source_dest_df1.head(15))
+#
+# # - we want to drop those rows where there is no 'destination'
+# source_dest_df2 = source_dest_df1.loc[source_dest_df1.count_dest > 0, :]
+# source_dest_df2 = source_dest_df2.reset_index(drop = True)
+#
+# # - we want to duplicate the "source" if there are multiple "destinations" for purpose of plotting Sankey diagram
+# # - so that we can get the 1-to-1 relationship mapping, from "source" to "destination"
+# source_dest_df2["expanded_source"] = [source_dest_df2.loc[num, "source"] * source_dest_df2.loc[num, "count_dest"]
+#                                       for num in range(source_dest_df2.shape[0])]
+#
+# source_dest_df3 = source_dest_df2.loc[:,["expanded_source", "destination"]]
+# print(source_dest_df3.head(15))
+#
+# # - split up the lists (especially rows with multiple "sources" and "destinations") for purpose of Sankey diagram
+# sankey_source = []
+# sankey_destin = []
+# for num in range(source_dest_df3.shape[0]):
+#
+#     s1 = source_dest_df3.expanded_source[num]
+#     d1 = source_dest_df3.destination[num]
+#
+#     if len(s1) == 1: # to handle the singular sources / destinations within the list
+#         sankey_source.append(s1[0])
+#         sankey_destin.append(d1[0])
+#
+#     else: # to handle multiple sources / destinations within the same list
+#         for sub_num in range(len(s1)):
+#             sankey_source.append(s1[sub_num])
+#             sankey_destin.append(d1[sub_num])
+#
+# # - obtain source-to-destination tuple mapping to count occurrences of mapping for computing "value" field for Sankey
+# source_dest_map = tuple(zip(sankey_source, sankey_destin))
+# counter = Counter(list(source_dest_map))
+#
+# # - get a de-duplicated source_dest_map (to drop the repeats; above non-deduplicated map is required only for counting)
+# source_dest_map_dedup = sorted(tuple(set(source_dest_map)))
+

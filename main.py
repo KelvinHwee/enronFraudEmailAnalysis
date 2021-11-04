@@ -27,6 +27,7 @@ import random
 # - import packages for visualisation
 import plotly.graph_objects as go
 import plotly.io as pio
+
 pio.renderers.default = "browser"
 from pyvis.network import Network
 import networkx as nx
@@ -49,6 +50,7 @@ from spacy.matcher import Matcher
 from spacy.tokens import Span
 from nltk.tokenize import sent_tokenize
 import nltk
+
 nltk.download('punkt')
 
 # - other configurations
@@ -63,8 +65,8 @@ matcher = Matcher(nlp.vocab)
 
 # - packages created
 from utils import extract_domain
+from utils import one_to_one_mapping
 from utils import get_relation, get_entities
-
 
 ########################################################################################################################
 #   Read CSV data file
@@ -87,7 +89,6 @@ from utils import get_relation, get_entities
 emails_df = pd.read_csv(source_filepath + '/sample_emails.csv')
 print("We look at a sample of the data: \n", emails_df.head(10))
 
-
 # - we take a look at some specific instances of "message"
 print(emails_df["message"][8])  # "X-From" and "X-To" field corresponds to the "From" and "To", but more explicit
 print(emails_df["message"][88])  # "Subject" field seems to be blank
@@ -105,28 +106,29 @@ for i in range(emails_df.shape[0]):
     # new_text = new_text.replace("\n\n", "\n")  # dropped this; the one after "filename" always has double "\n"
     new_text = new_text.replace("Re: ", "")  # some "Re: " in subject; , clean them to blanks
     new_text = new_text.replace("Fw: ", "")  # some "Fw: " in subject; , clean them to blanks
-    new_text = new_text.replace("\n\t", "") # very long recipient list has "\n\t"; clean them to blanks
-    new_text = new_text.replace(" : ", "") # some ":" in subject; , clean them to blanks
-    new_text = new_text.replace("[IMAGE]", "") # some "[IMAGE]" tags; , clean them to blanks
+    new_text = new_text.replace("\n\t", "")  # very long recipient list has "\n\t"; clean them to blanks
+    new_text = new_text.replace(" : ", "")  # some ":" in subject; , clean them to blanks
+    new_text = new_text.replace("[IMAGE]", "")  # some "[IMAGE]" tags; , clean them to blanks
     emails_df.loc[i, "message"] = new_text
 
 # - we collate the list of "keys"
 keys_list = ['Message-ID', 'Date', 'From', 'To', 'Subject', 'Cc', 'Mime-Version', 'Content-Type',
-             'Content-Transfer-Encoding','Bcc','X-From','X-To','X-cc', 'X-bcc', 'X-Folder', 'X-Origin', 'X-FileName']
+             'Content-Transfer-Encoding', 'Bcc', 'X-From', 'X-To', 'X-cc', 'X-bcc', 'X-Folder', 'X-Origin',
+             'X-FileName']
 
-fields_list = keys_list + ["Sent"] # to add in additional fields to clean (for RegEx later)
+fields_list = keys_list + ["Sent"]  # to add in additional fields to clean (for RegEx later)
 fields_list_plus = fields_list + [i.lower() for i in fields_list] \
-                   + [i.upper() for i in fields_list] # include variations of lower and upper case
+                   + [i.upper() for i in fields_list]  # include variations of lower and upper case
 
 # - create dictionary (using dictionary comprehension) to do "conversion" later on (you will see)
-keys_dict = {i:[k, len(k)] for i, k in enumerate(keys_list)}
+keys_dict = {i: [k, len(k)] for i, k in enumerate(keys_list)}
 
 # - we try to do a batch-wise extraction of the email contents based on the placeholders e.g. "To", "From", "Subject"
 list_of_dict = []
-for i in range(emails_df.shape[0]): # i=4
+for i in range(emails_df.shape[0]):  # i=4
 
-    email_dict = {} # empty dictionary to store the key-value pair
-    temp_str = emails_df["message"][i].split("\n") # assign string to variable; so can insert values to specific place
+    email_dict = {}  # empty dictionary to store the key-value pair
+    temp_str = emails_df["message"][i].split("\n")  # assign string to variable; so can insert values to specific place
 
     # this step uses the above created dictionary to "impute" keys if there are missing key values, e.g. "To", "Cc"
     for pos in range(len(keys_list)):
@@ -140,25 +142,29 @@ for i in range(emails_df.shape[0]): # i=4
         email_dict[key] = val
 
     # this step saves the body of the text; we apply some regex logic
-    text_body = temp_str[17: ]
-    text_body = " ".join([text for text in text_body]).strip() # joins back all elements into a single string
+    text_body = temp_str[17:]
+    text_body = " ".join([text for text in text_body]).strip()  # joins back all elements into a single string
 
     # regex logic
     clean_html_tags = re.compile("<[/]*.*?>|&nbsp;")
     clean_multi_space = re.compile("[\s]{2,}")
     clean_field_headers = re.compile('|'.join([item + ":" for item in fields_list_plus]))
     clean_emails = re.compile("[\w._]+@[\w.]+")
-    clean_fwds = re.compile("[-_]{2,}.*?[-_]{2,}|FW:|Fwd:|RE:") # cleans "Forwarded by" in between long dashes and others
+    clean_fwds = re.compile(
+        "[-_]{2,}.*?[-_]{2,}|FW:|Fwd:|RE:")  # cleans "Forwarded by" in between long dashes and others
     clean_unintended_sends = re.compile("[-_*]{2,}.*?[-_*]{2,}")
     clean_dashes = re.compile("[-]{2,}")
-    clean_transmission_warn = re.compile(r"The information.*?any computer.") # cleans warning texts
-    clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+") # for format DD/MM/YYYY XX:XX:XX AM/PM
-    clean_multi_symbols = re.compile("[>,(\"\'\\!.\[\]-]+\s?[>,(\"\'\\!.\[\]-]+") # e.g. "> >", ", , ", ", ("
+    clean_transmission_warn = re.compile(r"The information.*?any computer.")  # cleans warning texts
+    clean_datetime = re.compile(
+        "[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+")  # for format DD/MM/YYYY XX:XX:XX AM/PM
+    clean_multi_symbols = re.compile("[>,(\"\'\\!.\[\]-]+\s?[>,(\"\'\\!.\[\]-]+")  # e.g. "> >", ", , ", ", ("
     clean_addr_code = re.compile("[, ]*[A-Z]{2}\s+[\d]{5}")  # cleans ", TX 77082"
-    clean_phone_fax = re.compile("[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*") # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
-    clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}") # (281) 558-9198, (713) 670-2457
-    clean_link = re.compile(r"[http]*[https]*[:/]*/?[\w]+[.][\w]+.*[.][\w]+") # e.g. http://explorer.msn.com, https://explorer.msn.com.net"
-    clean_email_codes = re.compile("[=][\d]+") # clear email codes "=19", "=20"
+    clean_phone_fax = re.compile(
+        "[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*")  # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
+    clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}")  # (281) 558-9198, (713) 670-2457
+    clean_link = re.compile(
+        r"[http]*[https]*[:/]*/?[\w]+[.][\w]+.*[.][\w]+")  # e.g. http://explorer.msn.com, https://explorer.msn.com.net"
+    clean_email_codes = re.compile("[=][\d]+")  # clear email codes "=19", "=20"
     clean_very_long_text = re.compile("[\w+]{20,}")
     # Other things to clean: Staff Meeting - Mt. Ranier 5/30/2001 Time: 1:00 PM - 3:00 PM (Central Standard Time)
 
@@ -190,12 +196,11 @@ for i in range(emails_df.shape[0]): # i=4
 
 # - we compile the dictionary into a dataframe (rename columns) and print a few examples to take a look
 emails_df_feat = pd.DataFrame(list_of_dict)
-emails_df_feat.columns = ['Message-ID', 'DateTime', 'From', 'To', 'Subject', 'Cc', 'Mime-Version', # Date -> DateTime
+emails_df_feat.columns = ['Message-ID', 'DateTime', 'From', 'To', 'Subject', 'Cc', 'Mime-Version',  # Date -> DateTime
                           'Content-Type', 'Content-Transfer-Encoding', 'Bcc', 'X-From', 'X-To',
                           'X-cc', 'X-bcc', 'X-Folder', 'X-Origin', 'X-FileName', 'body']
 
 print(emails_df_feat.head())
-
 
 # - create new columns to include reformatted data: date, time, domain name (From and To) for emails
 '''
@@ -215,7 +220,6 @@ emails_df_feat["To_domain"] = extract_domain(emails_df_feat, "To")
 emails_df_feat["Cc_domain"] = extract_domain(emails_df_feat, "Cc")
 emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
-
 ########################################################################################################################
 #   Find relationships - spot associations based on email address domains rather than names
 ########################################################################################################################
@@ -224,56 +228,20 @@ emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
 # - create the dataframe that will contain the "source" and "destination"
 source_domains = emails_df_feat.From_domain.to_list()
-dest_domains = [list(set(emails_df_feat.loc[num,"To_domain"])) for num in range(emails_df_feat.shape[0])] # de-duplicate
+dest_domains = [list(set(emails_df_feat.loc[num, "To_domain"])) for num in
+                range(emails_df_feat.shape[0])]  # de-duplicate
 
-source_dest_df1 = pd.DataFrame({'source': source_domains, 'destination': dest_domains})
-source_dest_df1['count_dest'] = source_dest_df1.destination.apply(lambda x : len(x))
-print(source_dest_df1.head(15))
-
-# - we want to drop those rows where there is no 'destination'
-source_dest_df2 = source_dest_df1.loc[source_dest_df1.count_dest > 0, :]
-source_dest_df2 = source_dest_df2.reset_index(drop = True)
-
-# - we want to duplicate the "source" if there are multiple "destinations" for purpose of plotting Sankey diagram
-# - so that we can get the 1-to-1 relationship mapping, from "source" to "destination"
-source_dest_df2["expanded_source"] = [source_dest_df2.loc[num, "source"] * source_dest_df2.loc[num, "count_dest"]
-                                      for num in range(source_dest_df2.shape[0])]
-
-source_dest_df3 = source_dest_df2.loc[:,["expanded_source", "destination"]]
-print(source_dest_df3.head(15))
-
-# - split up the lists (especially rows with multiple "sources" and "destinations") for purpose of Sankey diagram
-sankey_source = []
-sankey_destin = []
-for num in range(source_dest_df3.shape[0]):
-
-    s1 = source_dest_df3.expanded_source[num]
-    d1 = source_dest_df3.destination[num]
-
-    if len(s1) == 1: # to handle the singular sources / destinations within the list
-        sankey_source.append(s1[0])
-        sankey_destin.append(d1[0])
-
-    else: # to handle multiple sources / destinations within the same list
-        for sub_num in range(len(s1)):
-            sankey_source.append(s1[sub_num])
-            sankey_destin.append(d1[sub_num])
-
-# - obtain source-to-destination tuple mapping to count occurrences of mapping for computing "value" field for Sankey
-source_dest_map = tuple(zip(sankey_source, sankey_destin))
-counter = Counter(list(source_dest_map))
-
-# - get a de-duplicated source_dest_map (to drop the repeats; above non-deduplicated map is required only for counting)
-source_dest_map_dedup = sorted(tuple(set(source_dest_map)))
+# - introduce the source and destination lists and the dataframe with all the one-to-one mapping will be done
+sankey_source, sankey_destin, source_dest_map_dedup, counter = one_to_one_mapping(source_domains, dest_domains)
 
 # - obtain a dictionary to map the domain names into indices for purpose of plotting Sankey diagram
 full_list_of_domains = sorted(list(set(sankey_source + sankey_destin)))
-domain_dict = {domain : num for num, domain in enumerate(full_list_of_domains)} # dictionary comprehension on key-value
+domain_dict = {domain: num for num, domain in enumerate(full_list_of_domains)}  # dictionary comprehension on key-value
 
 # - create the fields required for the Sankey diagram
-s2 = [] # to be directly used in plotting the Sankey diagram
-d2 = [] # to be directly used in plotting the Sankey diagram
-v2 = [] # to be directly used in plotting the Sankey diagram
+s2 = []  # to be directly used in plotting the Sankey diagram
+d2 = []  # to be directly used in plotting the Sankey diagram
+v2 = []  # to be directly used in plotting the Sankey diagram
 for i in range(len(source_dest_map_dedup)):
     tag1 = source_dest_map_dedup[i]
     s2.append(domain_dict[tag1[0]])
@@ -282,22 +250,21 @@ for i in range(len(source_dest_map_dedup)):
 
 # - plot the sankey diagram
 random.seed(24)
-sample_vals = random.sample(range(0, len(s2)), 120) # we sample 120 entries
+sample_vals = random.sample(range(0, len(s2)), 120)  # we sample 120 entries
 
 fig1 = go.Figure(data=[go.Sankey(
     node = dict(
-      pad = 5, thickness = 20, line = dict(color = "black", width = 0.5),
-      label = full_list_of_domains, color = "#3944BC"
+        pad = 5, thickness = 20, line = dict(color = "black", width = 0.5),
+        label = full_list_of_domains, color = "#3944BC"
     ),
     link = dict(source = [s2[i] for i in sample_vals],
                 target = [d2[i] for i in sample_vals],
                 value = [v2[i] for i in sample_vals],
                 color = "#F699CF"
-  ))])
+                ))])
 
 fig1.update_layout(title_text="Sankey Diagram to show associations based on domains", font_size=10)
 fig1.show()
-
 
 ########################################################################################################################
 #   Knowledge graph - to discover associations / information from email messages
@@ -322,7 +289,7 @@ email_doc_sentences = sent_tokenize(' '.join(emails_df_feat.body.to_list()))
 # - this for loop takes a while, we use TQDM here to track its progress
 entity_pairs = []
 relations = []
-exclusion_list = ['','you','i','me','them','we','they','it','this','who','us','he','she','what','>']
+exclusion_list = ['', 'you', 'i', 'me', 'them', 'we', 'they', 'it', 'this', 'who', 'us', 'he', 'she', 'what', '>']
 for i in tqdm(email_doc_sentences):
     if (get_entities(i)[0].lower() not in exclusion_list) and (get_entities(i)[1].lower() not in exclusion_list):
         entity_pairs.append(get_entities(i))
@@ -335,46 +302,46 @@ print(pd.Series(relations).value_counts().head(50))
 # - create the dataframe for Knowledge Graph
 source_kg = [s[0] for s in entity_pairs]
 destin_kg = [d[1] for d in entity_pairs]
-know_df = pd.DataFrame({'source':source_kg, 'destination':destin_kg, 'edge':relations})
+know_df = pd.DataFrame({'source': source_kg, 'destination': destin_kg, 'edge': relations})
 
 # - identify if the nodes contain names of interest (based on Wikipedia, the C-suite officers)
 name_patterns = '[Ee]nron|[Bb]yron|[Kk]enneth|[Jj]effrey|[Ss]killing|[Aa]ndrew|[Ff]astow'
 
 # - we create the filtered dataframe for Knowledge Graph
 filtered_know_df = know_df.loc[(know_df.source.str.contains(name_patterns)) |
-                                know_df.destination.str.contains(name_patterns),:].reset_index(drop = True)
+                               know_df.destination.str.contains(name_patterns), :].reset_index(drop=True)
 
 # - create the nodes list with the colours; nodes are coloured if they contain the names of interest
 full_nodes = filtered_know_df.source.to_list() + filtered_know_df.destination.to_list()
 color_nodes = ['red' if re.findall(name_patterns, i.lower()) != [] else '#3944BC' for i in full_nodes]
-image_nodes = ["/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/bad guy.JPG" if re.findall(name_patterns, i.lower()) != []
-               else "/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/good guy.JPG" for i in full_nodes]
+image_nodes = [
+    "/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/bad guy.JPG" if re.findall(name_patterns, i.lower()) != []
+    else "/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/good guy.JPG" for i in full_nodes]
 
-nodes_color_df = pd.DataFrame({'node':full_nodes, 'color':color_nodes, 'image':image_nodes})
+nodes_color_df = pd.DataFrame({'node': full_nodes, 'color': color_nodes, 'image': image_nodes})
 
 # - plot the Knowledge Graph: initialise the networkx graph object
 G_know = nx.Graph()
 
 # - plot the Knowledge Graph: add nodes (do we want to consider the weightage)
 for i in range(nodes_color_df.shape[0]):
-    G_know.add_node(nodes_color_df["node"][i], color = nodes_color_df["color"][i],
-                    shape = 'image',
-                    image = nodes_color_df["image"][i])
+    G_know.add_node(nodes_color_df["node"][i], color=nodes_color_df["color"][i],
+                    shape='image',
+                    image=nodes_color_df["image"][i])
 
 # - plot the Knowledge Graph: add edges (label the edges with the relation)
 for i in range(filtered_know_df.shape[0]):
     G_know.add_edge(filtered_know_df["source"][i], filtered_know_df["destination"][i],
-                    label = filtered_know_df["edge"][i], title = filtered_know_df["edge"][i])
+                    label=filtered_know_df["edge"][i], title=filtered_know_df["edge"][i])
 
 # - plot the final graph using Pyvis (https://pyvis.readthedocs.io/en/latest/documentation.html)
-nt_know = Network(height = 1000, width = 1200, directed = True)
+nt_know = Network(height=1000, width=1200, directed=True)
 nt_know.toggle_hide_edges_on_drag(True)
 
 # - BarnesHut is a quadtree based gravity model. It is the fastest
-nt_know.barnes_hut(spring_length = 10, overlap = 0.5, gravity = -10000, central_gravity = 0.8)
+nt_know.barnes_hut(spring_length=10, overlap=0.5, gravity=-10000, central_gravity=0.8)
 nt_know.from_nx(G_know)
 nt_know.show("knowledge_graph.html")
-
 
 ########################################################################################################################
 #   Network graph to show the connections between various parties; scoring of parties and plot graph based on them
@@ -390,13 +357,10 @@ emails_df_feat.head()
 # - plot graph for the top 3 most central nodes
 
 
-
 # --- we try to find the largest community
 emails_df_feat.head()
 
 # - plot graph for the top largest community
-
-
 
 
 '''
