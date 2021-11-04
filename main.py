@@ -387,6 +387,15 @@ References: https://networkx.org/documentation/stable/reference/algorithms/index
 # --- we try to derive the centrality score of the nodes (we will use the actual email addresses)
 emails_df_feat.head()
 
+# - plot graph for the top 3 most central nodes
+
+
+
+# --- we try to find the largest community
+emails_df_feat.head()
+
+# - plot graph for the top largest community
+
 
 
 
