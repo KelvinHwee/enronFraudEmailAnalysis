@@ -20,11 +20,34 @@ def extract_domain(df, col_name):
     for num in range(df.shape[0]):
         try:
             list_of_domains.append(list(set([re.findall(r"@(.*)[.]", i)[0]
-                                             for i in df.loc[num, col_name].split(",")])))
+                                             for i in df.loc[num, col_name][0].split(",")])))
         except:
             list_of_domains.append(list())  # this appends an empty list
 
     return list_of_domains
+
+
+########################################################################################################################
+#   create function to clean up the inconsistent representation of the email addresses
+########################################################################################################################
+
+# -  e.g "houston <.ward@enron.com>", "e-mail <.brandon@enron.com>"; unlike the usual "houston.ward@enron.com"
+def reformat_email_func(emails_df_feat, col_name, regex_func):
+    cleaned_emails = []
+    for i in range(emails_df_feat.shape[0]):
+        emails = emails_df_feat[col_name][i].split(",")
+        sub_cleaned_emails = []
+        for j in emails:
+            try:
+                sub_cleaned_emails.append(re.search(regex_func, j).group("part1") +
+                                          re.search(regex_func, j).group("part2") +
+                                          re.search(regex_func, j).group("domain"))
+            except:
+                sub_cleaned_emails.append('')
+
+        cleaned_emails.append(sub_cleaned_emails)
+
+    return cleaned_emails
 
 
 ########################################################################################################################
@@ -37,14 +60,24 @@ def extract_domain(df, col_name):
 def one_to_one_mapping(source_list, dest_list):
 
     df1 = pd.DataFrame({'source': source_list, 'destination': dest_list})
+
+    # - include the count for use later to create the "expanded source"
     df1['count_dest'] = df1.destination.apply(lambda x: len(x))
 
     # - we want to drop those rows where there is no 'destination'
     df2 = df1.loc[df1.count_dest > 0, :]
     df2 = df2.reset_index(drop=True)
 
+    # - "source" column contains lists, so multiplying by "count_dest" will create a list
     df2["expanded_source"] = [df2.loc[num, 'source'] * df2.loc[num, "count_dest"] for num in range(df2.shape[0])]
-    df3 = df2.loc[:,["expanded_source", 'destination']]
+    df3 = df2.loc[:, ["expanded_source", 'destination']].reset_index(drop=True)
+
+    # if type(source_list[0]) == list:
+    #     df2["expanded_source"] = [df2.loc[num, 'source'] * df2.loc[num, "count_dest"] for num in range(df2.shape[0])]
+    #     df3 = df2.loc[:, ["expanded_source", 'destination']]
+    # else:
+    #     df2["expanded_source"] = [[df2.loc[num, 'source']] * df2.loc[num, "count_dest"] for num in range(df2.shape[0])]
+    #     df3 = df2.loc[:, ["expanded_source", 'destination']]
 
     # - split up the lists (especially rows with multiple "sources" and "destinations") for purpose of Sankey diagram
     source = []

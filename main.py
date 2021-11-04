@@ -51,7 +51,7 @@ from spacy.tokens import Span
 from nltk.tokenize import sent_tokenize
 import nltk
 
-nltk.download('punkt')
+# nltk.download('punkt') # uncomment this if you run into punkt download issues
 
 # - other configurations
 pd.set_option("display.max_column", None)
@@ -64,7 +64,7 @@ nlp = spacy.load('en_core_web_sm-3.1.0')
 matcher = Matcher(nlp.vocab)
 
 # - packages created
-from utils import extract_domain
+from utils import extract_domain, reformat_email_func
 from utils import one_to_one_mapping
 from utils import get_relation, get_entities
 
@@ -81,9 +81,9 @@ from utils import get_relation, get_entities
 # # - read in the CSV data
 # emails_df = pd.read_csv(source_filepath + '/emails.csv')
 #
-# # - read in the sample CSV data
+# - read in the sample CSV data
 # import random
-# sample_vals = random.sample(list(range(emails_df.shape[0])), 1000)
+# sample_vals = random.sample(list(range(emails_df.shape[0])), 5000)
 # emails_df.loc[sample_vals].to_csv(source_filepath + '/sample_emails.csv')
 
 emails_df = pd.read_csv(source_filepath + '/sample_emails.csv')
@@ -92,7 +92,6 @@ print("We look at a sample of the data: \n", emails_df.head(10))
 # - we take a look at some specific instances of "message"
 print(emails_df["message"][8])  # "X-From" and "X-To" field corresponds to the "From" and "To", but more explicit
 print(emails_df["message"][88])  # "Subject" field seems to be blank
-# print(emails_df["message"][888])  # email with several recipients (sent to an email group)
 
 
 ########################################################################################################################
@@ -196,7 +195,20 @@ emails_df_feat.columns = ['Message-ID', 'DateTime', 'From', 'To', 'Subject', 'Cc
                           'Content-Type', 'Content-Transfer-Encoding', 'Bcc', 'X-From', 'X-To',
                           'X-cc', 'X-bcc', 'X-Folder', 'X-Origin', 'X-FileName', 'body']
 
-print(emails_df_feat.head())
+# - we further clean up the email addresses in the "From". "To", "Cc", "Bcc" fields using Regex groups
+# - e.g "houston <.ward@enron.com>", "e-mail <.brandon@enron.com>"; unlike the usual "houston.ward@enron.com"
+reformat_emails = re.compile(r"(?P<part1>[\w-]+)[<\s]*(?P<part2>[\w.\'\W]+)(?P<domain>[@\w.-]+)")
+
+cleaned_from_emails = reformat_email_func(emails_df_feat, "From", reformat_emails)
+cleaned_to_emails = reformat_email_func(emails_df_feat, "To", reformat_emails)
+cleaned_cc_emails = reformat_email_func(emails_df_feat, "Cc", reformat_emails)
+cleaned_bcc_emails = reformat_email_func(emails_df_feat, "Bcc", reformat_emails)
+
+# - replace the columns with the cleaned up emails
+emails_df_feat.From = cleaned_from_emails
+emails_df_feat.To = cleaned_to_emails
+emails_df_feat.Cc = cleaned_cc_emails
+emails_df_feat.Bcc = cleaned_bcc_emails
 
 # - create new columns to include reformatted data: date, time, domain name (From and To) for emails
 '''
@@ -216,16 +228,17 @@ emails_df_feat["To_domain"] = extract_domain(emails_df_feat, "To")
 emails_df_feat["Cc_domain"] = extract_domain(emails_df_feat, "Cc")
 emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
+
 ########################################################################################################################
-#   Find relationships - spot associations based on email address domains rather than names
+#   Find relationships using Sankey diagram - spot associations based on email address domains rather than names
 ########################################################################################################################
 
-# --- we use different ways to plot the associations (Sankey diagram, network graphs)
+# --- we use different ways to plot the associations (Sankey diagram)
 
 # - create the dataframe that will contain the "source" and "destination"
 source_domains = emails_df_feat.From_domain.to_list()
 dest_domains = [list(set(emails_df_feat.loc[num, "To_domain"])) for num in
-                range(emails_df_feat.shape[0])]  # de-duplicate
+                range(emails_df_feat.shape[0])]  # de-duplicated
 
 # - introduce the source and destination lists and the dataframe with all the one-to-one mapping will be done
 sankey_source, sankey_destin, source_dest_map_dedup, counter = one_to_one_mapping(source_domains, dest_domains)
@@ -279,14 +292,14 @@ fig1.show()
 - https://www.analyticsvidhya.com/blog/2019/10/how-to-build-knowledge-graph-text-using-spacy/
 '''
 # - create the required "document"; we further create sentence tokens to extract the entities and relationships
-full_email_doc = nlp(' '.join(emails_df_feat.body.to_list()))
+# full_email_doc = nlp(' '.join(emails_df_feat.body.to_list()))
 email_doc_sentences = sent_tokenize(' '.join(emails_df_feat.body.to_list()))
 
 # - extract the entities and relations (if the entity pair does not contain just a 'blank' entity)
 # - this for loop takes a while, we use TQDM here to track its progress
 entity_pairs = []
 relations = []
-exclusion_list = ['', 'you', 'i', 'me', 'them', 'we', 'they', 'it', 'this', 'who', 'us', 'he', 'she', 'what', '>']
+exclusion_list = ['','you','i','me','them','we','they','it','this','who','us','he','that','she','what','>']
 for i in tqdm(email_doc_sentences):
     if (get_entities(i)[0].lower() not in exclusion_list) and (get_entities(i)[1].lower() not in exclusion_list):
         entity_pairs.append(get_entities(i))
@@ -304,9 +317,12 @@ know_df = pd.DataFrame({'source': source_kg, 'destination': destin_kg, 'edge': r
 # - identify if the nodes contain names of interest (based on Wikipedia, the C-suite officers)
 name_patterns = '[Ee]nron|[Bb]yron|[Kk]enneth|[Jj]effrey|[Ss]killing|[Aa]ndrew|[Ff]astow'
 
-# - we create the filtered dataframe for Knowledge Graph
+# - we create the filtered dataframe for Knowledge Graph based on name matching patterns
 filtered_know_df = know_df.loc[(know_df.source.str.contains(name_patterns)) |
                                know_df.destination.str.contains(name_patterns), :].reset_index(drop=True)
+
+sample_idx1 = random.sample(range(0, filtered_know_df.shape[0]), 120)  # we sample 120 entries
+filtered_know_df = filtered_know_df.loc[sample_idx1, :].reset_index(drop=True)
 
 # - create the nodes list with the colours; nodes are coloured if they contain the names of interest
 full_nodes = filtered_know_df.source.to_list() + filtered_know_df.destination.to_list()
@@ -348,6 +364,52 @@ nt_know.show("knowledge_graph.html")
 
 References: https://networkx.org/documentation/stable/reference/algorithms/index.html
 '''
+# - get the one-to-one mapping for the email addresses
+email_sender_list = emails_df_feat.From.to_list()
+email_recipient_list = emails_df_feat.To.to_list()
+net_source, net_destin, source_dest_net_map, _  = one_to_one_mapping(email_sender_list, email_recipient_list)
+
+# - create the dataframe for Network Graph
+net_df = pd.DataFrame({'source': net_source, 'destination': net_destin})
+
+# - identify if the nodes contain names of interest (based on Wikipedia, the C-suite officers)
+name_patterns_net = '[Ss]killing|[Ff]astow|[Jj]usbasche|[Cc]ooper'
+
+# - we create the filtered dataframe for Network Graph based on name matching patterns
+filtered_net_df = net_df.loc[(net_df.source.str.contains(name_patterns_net)
+                              | net_df.destination.str.contains(name_patterns_net))
+                             & (net_df.source != '')
+                             & (net_df.destination != ''), :].reset_index(drop=True)
+
+sample_idx2 = random.sample(range(0, filtered_net_df.shape[0]), min(250, filtered_net_df.shape[0])) # sample some emails
+sample_net_df = filtered_net_df.loc[sample_idx2, :].reset_index(drop=True)
+
+# - create the nodes list with the colours; nodes are coloured if they contain the names of interest
+full_nodes_net = sample_net_df.source.to_list() + sample_net_df.destination.to_list()
+color_nodes_net = ['red' if re.findall(name_patterns_net, i.lower()) != [] else '#3944BC' for i in full_nodes_net]
+nodes_color_net_df = pd.DataFrame({'node': full_nodes_net, 'color': color_nodes_net})
+
+# - plot the Network Graph: initialise the networkx graph object
+G_net = nx.Graph()
+
+# - plot the Network Graph: add nodes (do we want to consider the weightage)
+for i in range(nodes_color_net_df.shape[0]):
+    G_net.add_node(nodes_color_net_df["node"][i], color=nodes_color_net_df["color"][i])
+
+# - plot the Network Graph: add edges (label the edges with the relation)
+for i in range(sample_net_df.shape[0]):
+    G_net.add_edge(sample_net_df["source"][i], sample_net_df["destination"][i])
+
+# - plot the final graph using Pyvis (https://pyvis.readthedocs.io/en/latest/documentation.html)
+nt_network = Network(height=1000, width=1200, directed=True)
+nt_network.toggle_hide_edges_on_drag(False)
+
+# - BarnesHut is a quadtree based gravity model. It is the fastest
+nt_network.barnes_hut(spring_length=10, overlap=0.5, gravity=-10000, central_gravity=0.8)
+nt_network.from_nx(G_net)
+nt_network.show("network_graph.html")
+
+
 
 # --- we try to derive the centrality score of the nodes (we will use the actual email addresses)
 emails_df_feat.head()

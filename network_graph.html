@@ -1,0 +1,116 @@
+<html>
+<head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" type="text/css" />
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis-network.min.js"> </script>
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+
+<style type="text/css">
+
+        #mynetwork {
+            width: 1200;
+            height: 1000;
+            background-color: #ffffff;
+            border: 1px solid lightgray;
+            position: relative;
+            float: left;
+        }
+
+        
+
+        
+
+        
+</style>
+
+</head>
+
+<body>
+<div id = "mynetwork"></div>
+
+
+<script type="text/javascript">
+
+    // initialize global variables.
+    var edges;
+    var nodes;
+    var network; 
+    var container;
+    var options, data;
+
+    
+    // This method is responsible for drawing the graph, returns the drawn network
+    function drawGraph() {
+        var container = document.getElementById('mynetwork');
+        
+        
+
+        // parsing and collecting nodes and edges from the python
+        nodes = new vis.DataSet([{"color": "red", "id": "markskilling@hotmail.com", "label": "markskilling@hotmail.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "deniz.razon@abbott.com", "label": "deniz.razon@abbott.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "tomskilljr@aol.com", "label": "tomskilljr@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "daveroche@aol.com", "label": "daveroche@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "mlangermann@2onesource.com", "label": "mlangermann@2onesource.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "samjstokes@aol.com", "label": "samjstokes@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "joguti@aol.com", "label": "joguti@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "fly_soft@classic.msm.com", "label": "fly_soft@classic.msm.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "clowes@email.msn.com", "label": "clowes@email.msn.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "smackarnes@aol.com", "label": "smackarnes@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "hazerfen@hotmail.com", "label": "hazerfen@hotmail.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "eisenbachrl@cooley.com", "label": "eisenbachrl@cooley.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "cjones@cityofnapa.org", "label": "cjones@cityofnapa.org", "shape": "dot", "size": 10}, {"color": "red", "id": "jeff.skilling@enron.com", "label": "jeff.skilling@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "katekross@aol.com", "label": "katekross@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "pwc1@aol.com", "label": "pwc1@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "candc@ix.netcom.com", "label": "candc@ix.netcom.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "ak1992@yahoo.com", "label": "ak1992@yahoo.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "martin@sbu.edu", "label": "martin@sbu.edu", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "cp253w16@aol.com", "label": "cp253w16@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "audryn@mindspring.com", "label": "audryn@mindspring.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "khuber@hcmwealth.com", "label": "khuber@hcmwealth.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "adbaby@aol.com", "label": "adbaby@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "linda@cyrilandcrowley.com", "label": "linda@cyrilandcrowley.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "milobenn@sirius.com", "label": "milobenn@sirius.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "jalibow@yahoo.com", "label": "jalibow@yahoo.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "ermak@gte.net", "label": "ermak@gte.net", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "transwd@aol.com", "label": "transwd@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "sras@lycosmail.com", "label": "sras@lycosmail.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "lja49@gateway.net", "label": "lja49@gateway.net", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "mshachat@aol.com", "label": "mshachat@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "ksbiehl@hotmail.com", "label": "ksbiehl@hotmail.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "candace@evite.com", "label": "candace@evite.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "robdbogey@aol.com", "label": "robdbogey@aol.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "mmmmisha@ix.netcom.com", "label": "mmmmisha@ix.netcom.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "dlmackler@worldnet.att.net", "label": "dlmackler@worldnet.att.net", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "majalinda@hotmail.com", "label": "majalinda@hotmail.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "mwf15@columbia.edu", "label": "mwf15@columbia.edu", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "meyerjames@hotmail.com", "label": "meyerjames@hotmail.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "oldenlaw@sirius.com", "label": "oldenlaw@sirius.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "clowes@cmithlaw.com", "label": "clowes@cmithlaw.com", "shape": "dot", "size": 10}, {"color": "red", "id": "tskilling@tribune.com", "label": "tskilling@tribune.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "dwood@rwblaw.com", "label": "dwood@rwblaw.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "liz.taylor@enron.com", "label": "liz.taylor@enron.com", "shape": "dot", "size": 10}, {"color": "red", "id": "cooper.richey@enron.com", "label": "cooper.richey@enron.com", "shape": "dot", "size": 10}, {"color": "red", "id": "ken.skilling@enron.com", "label": "ken.skilling@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "all.worldwide@enron.com", "label": "all.worldwide@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "all.employees@enron.com", "label": "all.employees@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "janette.elbertson@enron.com", "label": "janette.elbertson@enron.com", "shape": "dot", "size": 10}, {"color": "red", "id": "edmund.cooper@enron.com", "label": "edmund.cooper@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "tom.delaney@enron.com", "label": "tom.delaney@enron.com", "shape": "dot", "size": 10}, {"color": "red", "id": "tracy.cooper@enron.com", "label": "tracy.cooper@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "ginger.dernehl@enron.com", "label": "ginger.dernehl@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "simone.rose@enron.com", "label": "simone.rose@enron.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "john@pgsenergy.com", "label": "john@pgsenergy.com", "shape": "dot", "size": 10}, {"color": "#3944BC", "id": "nieves.soto@enron.com", "label": "nieves.soto@enron.com", "shape": "dot", "size": 10}]);
+        edges = new vis.DataSet([{"arrows": "to", "from": "markskilling@hotmail.com", "to": "deniz.razon@abbott.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "tomskilljr@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "daveroche@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "mlangermann@2onesource.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "samjstokes@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "joguti@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "fly_soft@classic.msm.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "clowes@email.msn.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "smackarnes@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "hazerfen@hotmail.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "eisenbachrl@cooley.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "cjones@cityofnapa.org", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "jeff.skilling@enron.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "katekross@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "pwc1@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "candc@ix.netcom.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "ak1992@yahoo.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "martin@sbu.edu", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "cp253w16@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "audryn@mindspring.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "khuber@hcmwealth.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "adbaby@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "linda@cyrilandcrowley.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "milobenn@sirius.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "jalibow@yahoo.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "ermak@gte.net", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "transwd@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "sras@lycosmail.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "lja49@gateway.net", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "mshachat@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "ksbiehl@hotmail.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "candace@evite.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "robdbogey@aol.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "mmmmisha@ix.netcom.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "dlmackler@worldnet.att.net", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "majalinda@hotmail.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "mwf15@columbia.edu", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "meyerjames@hotmail.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "oldenlaw@sirius.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "clowes@cmithlaw.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "tskilling@tribune.com", "weight": 1}, {"arrows": "to", "from": "markskilling@hotmail.com", "to": "dwood@rwblaw.com", "weight": 1}, {"arrows": "to", "from": "liz.taylor@enron.com", "to": "cooper.richey@enron.com", "weight": 1}, {"arrows": "to", "from": "ken.skilling@enron.com", "to": "all.worldwide@enron.com", "weight": 1}, {"arrows": "to", "from": "ken.skilling@enron.com", "to": "all.employees@enron.com", "weight": 1}, {"arrows": "to", "from": "janette.elbertson@enron.com", "to": "edmund.cooper@enron.com", "weight": 1}, {"arrows": "to", "from": "tom.delaney@enron.com", "to": "tracy.cooper@enron.com", "weight": 1}, {"arrows": "to", "from": "ginger.dernehl@enron.com", "to": "tracy.cooper@enron.com", "weight": 1}, {"arrows": "to", "from": "simone.rose@enron.com", "to": "jeff.skilling@enron.com", "weight": 1}, {"arrows": "to", "from": "john@pgsenergy.com", "to": "jeff.skilling@enron.com", "weight": 1}, {"arrows": "to", "from": "nieves.soto@enron.com", "to": "jeff.skilling@enron.com", "weight": 1}]);
+
+        // adding nodes and edges to the graph
+        data = {nodes: nodes, edges: edges};
+
+        var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": false,
+            "type": "continuous"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0.5,
+            "centralGravity": 0.8,
+            "damping": 0.09,
+            "gravitationalConstant": -10000,
+            "springConstant": 0.001,
+            "springLength": 10
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+        
+        
+
+        
+
+        network = new vis.Network(container, data, options);
+	 
+        
+
+
+        
+
+        return network;
+
+    }
+
+    drawGraph();
+
+</script>
+</body>
+</html>
