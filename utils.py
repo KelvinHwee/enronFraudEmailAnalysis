@@ -175,3 +175,56 @@ def get_relation(sent):
 #     ent = get_entities(i)
 #     if ent not in entity_pairs:
 #         entity_pairs.append(ent)
+
+
+# nxg = nx.complete_graph(5)
+# nt_know.from_nx(nxg)
+# nt_know.show("name.html")
+#
+# type(nxg) # networkx.classes.graph.Graph
+# type(G_kg)
+#
+# nxg = nx.draw(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
+# nt_know.from_nx(nxg)
+# nt_know.show("name.html")
+#
+# nxg = nx.empty_graph(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
+# nt_know.from_nx(nxg)
+# nt_know.show("name.html")
+#
+#
+# g = Network()
+# g.add_node(1)
+# g.add_node(2)
+# g.add_edge(1, 2,data={1})
+# g.add_edge(1, 2,data={2})
+# type(g)
+
+
+# G_kg = nx.from_pandas_edgelist(know_df.loc[know_df["edge"].isin(["contact", "received"]), :], "source", "destination",
+#                                edge_attr = True, create_using = nx.MultiDiGraph())
+#
+# plt.figure(figsize=(12,12))
+# pos = nx.spring_layout(G_kg)
+# nx.draw(G_kg, with_labels=True, node_color = 'skyblue', edge_cmap = plt.cm.Blues, pos = pos)
+# plt.show()
+#
+# nt_know = Network()
+#
+# plt.figure(figsize=(12,12))
+# pos = nx.spring_layout(G_kg)
+# nt_know.from_nx(G_kg, with_labels=True, node_color='skyblue', pos = pos)
+# nt_know.show()
+#
+#
+#
+#
+# G = nx.Graph()
+# G.add_node('a',color='red',size=4)
+# G.add_node('b',color='#30a1a5',size=3)
+# G.add_node('c',color='green',size=1)
+# G.add_edge('a','b',weight=1023)
+# G.add_edge('a','c',weight=435)
+# G.add_edge('b','c',weight=100)
+# nt_know.from_nx(G)
+# nt_know.show("name2.html")

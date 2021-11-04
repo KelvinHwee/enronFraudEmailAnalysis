@@ -301,13 +301,19 @@ fig1.show()
 
 
 ########################################################################################################################
-#   Knowledge graph - to mine information from texts
+#   Knowledge graph - to discover associations / information from email messages
 ########################################################################################################################
 '''
 - building graphs requires nodes and edges; same goes for knowledge graphs
 - the nodes are going to be the entities mentioned in the sentences; edges are the relationships connecting the nodes
-
 - convert the email bodies into sentences
+
+- NOTE: plotting Knowledge Graph for email messages may not be quite feasible given the way that emails are written, the
+- reason for doing Knowledge Graph for this exercise is purely for learning purposes
+
+- References: https://gist.github.com/quadrismegistus/92a7fba479fc1e7d2661909d19d4ae7e, 
+- https://pyvis.readthedocs.io/en/latest/tutorial.html, https://github.com/WestHealth/pyvis,
+- https://www.analyticsvidhya.com/blog/2019/10/how-to-build-knowledge-graph-text-using-spacy/
 '''
 # - create the required "document"; we further create sentence tokens to extract the entities and relationships
 full_email_doc = nlp(emails_df_feat.body.to_list())
@@ -317,64 +323,71 @@ email_doc_sentences = sent_tokenize(' '.join(emails_df_feat.body.to_list()))
 # - this for loop takes a while, we use TQDM here to track its progress
 entity_pairs = []
 relations = []
+exclusion_list = ['','you','i','me','them','we','they','it','this','who','us','he','she','what','>']
 for i in tqdm(email_doc_sentences):
-    if get_entities(i)[0] != '' and get_entities(i)[1] != '':
+    if (get_entities(i)[0].lower() not in exclusion_list) and (get_entities(i)[1].lower() not in exclusion_list):
         entity_pairs.append(get_entities(i))
         relations.append(get_relation(i))
 
-# - we print the top 30 entity pairs and top 30 relations; choose one to plot for the Knowledge Graph later
-print(pd.Series(entity_pairs).value_counts().head(30))
-print(pd.Series(relations).value_counts().head(30))
+# - we print the top 50 entity pairs and top 50 relations; choose one to plot for the Knowledge Graph later
+print(pd.Series(entity_pairs).value_counts().head(50))
+print(pd.Series(relations).value_counts().head(50))
 
 # - create the dataframe for Knowledge Graph
 source_kg = [s[0] for s in entity_pairs]
 destin_kg = [d[1] for d in entity_pairs]
 know_df = pd.DataFrame({'source':source_kg, 'destination':destin_kg, 'edge':relations})
 
-# - plot the Knowledge Graph
-# G_kg = nx.from_pandas_edgelist(know_df, "source", "destination", edge_attr = True, create_using = nx.MultiGraph())
-G_kg = nx.from_pandas_edgelist(know_df[know_df["edge"] == "contact"], "source", "destination",
-                               edge_attr = True, create_using = nx.MultiGraph())
+# - identify if the nodes contain names of interest (based on Wikipedia, the C-suite officers)
+name_patterns = '[Ee]nron|[Bb]yron|[Kk]enneth|[Jj]effrey|[Ss]killing|[Aa]ndrew|[Ff]astow'
 
-plt.figure(figsize=(12,12))
-pos = nx.spring_layout(G_kg)
-nx.draw(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
-plt.show()
+# - we create the filtered dataframe for Knowledge Graph
+filtered_know_df = know_df.loc[(know_df.source.str.contains(name_patterns)) |
+                                know_df.destination.str.contains(name_patterns),:].reset_index(drop = True)
 
-nt_know = Network()
+# - create the nodes list with the colours; nodes are coloured if they contain the names of interest
+full_nodes = filtered_know_df.source.to_list() + filtered_know_df.destination.to_list()
+color_nodes = ['red' if re.findall(name_patterns, i.lower()) != [] else '#3944BC' for i in full_nodes]
+nodes_color_df = pd.DataFrame({'node':full_nodes, 'color':color_nodes})
 
-plt.figure(figsize=(12,12))
-pos = nx.spring_layout(G_kg)
-nt_know.from_nx(G_kg, with_labels=True, node_color='skyblue', pos = pos)
-nt_know.show()
+# - plot the Knowledge Graph: initialise the networkx graph object
+G_know = nx.Graph()
 
-nxg = nx.complete_graph(5)
-nt_know.from_nx(nxg)
-nt_know.show("name.html")
+# - plot the Knowledge Graph: add nodes (do we want to consider the weightage)
+for i in range(nodes_color_df.shape[0]):
+    G_know.add_node(nodes_color_df["node"][i], color = nodes_color_df["color"][i],
+                    shape = 'image',
+                    image = "/home/kelvinhwee/Downloads/img_452503.png")
 
-type(nxg)
+# - plot the Knowledge Graph: add edges (label the edges with the relation)
+for i in range(filtered_know_df.shape[0]):
+    G_know.add_edge(filtered_know_df["source"][i], filtered_know_df["destination"][i],
+                    label = filtered_know_df["edge"][i], title = filtered_know_df["edge"][i])
 
-nxg = nx.draw(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
-nt_know.from_nx(nxg)
-nt_know.show("name.html")
+# - plot the final graph using Pyvis (https://pyvis.readthedocs.io/en/latest/documentation.html)
+nt_know = Network(height = 1000, width = 1200, directed = True)
+nt_know.toggle_hide_edges_on_drag(True)
 
-nxg = nx.empty_graph(G_kg, with_labels=True, node_color='skyblue', edge_cmap=plt.cm.Blues, pos = pos)
-nt_know.from_nx(nxg)
-nt_know.show("name.html")
+# - BarnesHut is a quadtree based gravity model. It is the fastest
+nt_know.barnes_hut(spring_length = 10, overlap = 0.5, gravity = -10000, central_gravity = 0.8)
+nt_know.from_nx(G_know)
+nt_know.show("knowledge_graph.html")
 
-# testing
+
+########################################################################################################################
+#   Network graph to show the connections between various parties; scoring of parties and plot graph based on them
+########################################################################################################################
+'''
+
+References: https://networkx.org/documentation/stable/reference/algorithms/index.html
+'''
 
 
-# testing - end
+
+
+
 
 
 '''
 scattertext === https://github.com/JasonKessler/scattertext
 '''
-
-
-########################################################################################################################
-#   Network graph to show the connections between various parties
-########################################################################################################################
-
-
