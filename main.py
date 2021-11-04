@@ -150,20 +150,16 @@ for i in range(emails_df.shape[0]):  # i=4
     clean_multi_space = re.compile("[\s]{2,}")
     clean_field_headers = re.compile('|'.join([item + ":" for item in fields_list_plus]))
     clean_emails = re.compile("[\w._]+@[\w.]+")
-    clean_fwds = re.compile(
-        "[-_]{2,}.*?[-_]{2,}|FW:|Fwd:|RE:")  # cleans "Forwarded by" in between long dashes and others
+    clean_fwds = re.compile("[-_]{2,}.*?[-_]{2,}|FW:|Fwd:|RE:")  # cleans "Forwarded by" in between long dashes and others
     clean_unintended_sends = re.compile("[-_*]{2,}.*?[-_*]{2,}")
     clean_dashes = re.compile("[-]{2,}")
     clean_transmission_warn = re.compile(r"The information.*?any computer.")  # cleans warning texts
-    clean_datetime = re.compile(
-        "[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+")  # for format DD/MM/YYYY XX:XX:XX AM/PM
+    clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+")  # for format DD/MM/YYYY XX:XX:XX AM/PM
     clean_multi_symbols = re.compile("[>,(\"\'\\!.\[\]-]+\s?[>,(\"\'\\!.\[\]-]+")  # e.g. "> >", ", , ", ", ("
     clean_addr_code = re.compile("[, ]*[A-Z]{2}\s+[\d]{5}")  # cleans ", TX 77082"
-    clean_phone_fax = re.compile(
-        "[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*")  # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
+    clean_phone_fax = re.compile("[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*")  # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
     clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}")  # (281) 558-9198, (713) 670-2457
-    clean_link = re.compile(
-        r"[http]*[https]*[:/]*/?[\w]+[.][\w]+.*[.][\w]+")  # e.g. http://explorer.msn.com, https://explorer.msn.com.net"
+    clean_link = re.compile(r"[http]*[https]*[:/]*/?[\w]+[.][\w]+.*[.][\w]+")  # e.g. http://explorer.msn.com, https://explorer.msn.com.net"
     clean_email_codes = re.compile("[=][\d]+")  # clear email codes "=19", "=20"
     clean_very_long_text = re.compile("[\w+]{20,}")
     # Other things to clean: Staff Meeting - Mt. Ranier 5/30/2001 Time: 1:00 PM - 3:00 PM (Central Standard Time)
@@ -266,6 +262,7 @@ fig1 = go.Figure(data=[go.Sankey(
 fig1.update_layout(title_text="Sankey Diagram to show associations based on domains", font_size=10)
 fig1.show()
 
+
 ########################################################################################################################
 #   Knowledge graph - to discover associations / information from email messages
 ########################################################################################################################
@@ -314,9 +311,9 @@ filtered_know_df = know_df.loc[(know_df.source.str.contains(name_patterns)) |
 # - create the nodes list with the colours; nodes are coloured if they contain the names of interest
 full_nodes = filtered_know_df.source.to_list() + filtered_know_df.destination.to_list()
 color_nodes = ['red' if re.findall(name_patterns, i.lower()) != [] else '#3944BC' for i in full_nodes]
-image_nodes = [
-    "/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/bad guy.JPG" if re.findall(name_patterns, i.lower()) != []
-    else "/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/good guy.JPG" for i in full_nodes]
+image_nodes = ["/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/bad guy.JPG"
+               if re.findall(name_patterns, i.lower()) != []
+               else "/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/good guy.JPG" for i in full_nodes]
 
 nodes_color_df = pd.DataFrame({'node': full_nodes, 'color': color_nodes, 'image': image_nodes})
 
@@ -342,6 +339,7 @@ nt_know.toggle_hide_edges_on_drag(True)
 nt_know.barnes_hut(spring_length=10, overlap=0.5, gravity=-10000, central_gravity=0.8)
 nt_know.from_nx(G_know)
 nt_know.show("knowledge_graph.html")
+
 
 ########################################################################################################################
 #   Network graph to show the connections between various parties; scoring of parties and plot graph based on them
