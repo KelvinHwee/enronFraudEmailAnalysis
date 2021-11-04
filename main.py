@@ -220,12 +220,11 @@ emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 #   Find relationships - spot associations based on email address domains rather than names
 ########################################################################################################################
 
-#=== we use different ways to plot the associations (Sankey diagram, network graphs)
-#--- we try to plot the Sankey diagram
+# --- we use different ways to plot the associations (Sankey diagram, network graphs)
 
 # - create the dataframe that will contain the "source" and "destination"
 source_domains = emails_df_feat.From_domain.to_list()
-dest_domains   = [list(set(emails_df_feat.loc[num, "To_domain"])) for num in range(emails_df_feat.shape[0])] # de-duplicate
+dest_domains = [list(set(emails_df_feat.loc[num,"To_domain"])) for num in range(emails_df_feat.shape[0])] # de-duplicate
 
 source_dest_df1 = pd.DataFrame({'source': source_domains, 'destination': dest_domains})
 source_dest_df1['count_dest'] = source_dest_df1.destination.apply(lambda x : len(x))
@@ -283,7 +282,7 @@ for i in range(len(source_dest_map_dedup)):
 
 # - plot the sankey diagram
 random.seed(24)
-sample_vals = random.sample(range(0, len(s2)), 120)
+sample_vals = random.sample(range(0, len(s2)), 120) # we sample 120 entries
 
 fig1 = go.Figure(data=[go.Sankey(
     node = dict(
@@ -316,7 +315,7 @@ fig1.show()
 - https://www.analyticsvidhya.com/blog/2019/10/how-to-build-knowledge-graph-text-using-spacy/
 '''
 # - create the required "document"; we further create sentence tokens to extract the entities and relationships
-full_email_doc = nlp(emails_df_feat.body.to_list())
+full_email_doc = nlp(' '.join(emails_df_feat.body.to_list()))
 email_doc_sentences = sent_tokenize(' '.join(emails_df_feat.body.to_list()))
 
 # - extract the entities and relations (if the entity pair does not contain just a 'blank' entity)
@@ -348,7 +347,10 @@ filtered_know_df = know_df.loc[(know_df.source.str.contains(name_patterns)) |
 # - create the nodes list with the colours; nodes are coloured if they contain the names of interest
 full_nodes = filtered_know_df.source.to_list() + filtered_know_df.destination.to_list()
 color_nodes = ['red' if re.findall(name_patterns, i.lower()) != [] else '#3944BC' for i in full_nodes]
-nodes_color_df = pd.DataFrame({'node':full_nodes, 'color':color_nodes})
+image_nodes = ["/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/bad guy.JPG" if re.findall(name_patterns, i.lower()) != []
+               else "/home/kelvinhwee/PycharmProjects/enronFraudEmailAnalysis/good guy.JPG" for i in full_nodes]
+
+nodes_color_df = pd.DataFrame({'node':full_nodes, 'color':color_nodes, 'image':image_nodes})
 
 # - plot the Knowledge Graph: initialise the networkx graph object
 G_know = nx.Graph()
@@ -357,7 +359,7 @@ G_know = nx.Graph()
 for i in range(nodes_color_df.shape[0]):
     G_know.add_node(nodes_color_df["node"][i], color = nodes_color_df["color"][i],
                     shape = 'image',
-                    image = "/home/kelvinhwee/Downloads/img_452503.png")
+                    image = nodes_color_df["image"][i])
 
 # - plot the Knowledge Graph: add edges (label the edges with the relation)
 for i in range(filtered_know_df.shape[0]):
@@ -382,8 +384,8 @@ nt_know.show("knowledge_graph.html")
 References: https://networkx.org/documentation/stable/reference/algorithms/index.html
 '''
 
-
-
+# --- we try to derive the centrality score of the nodes (we will use the actual email addresses)
+emails_df_feat.head()
 
 
 
