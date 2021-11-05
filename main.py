@@ -375,13 +375,23 @@ net_df = pd.DataFrame({'source': net_source, 'destination': net_destin})
 # - identify if the nodes contain names of interest (based on Wikipedia, the C-suite officers)
 name_patterns_net = '[Ss]killing|[Ff]astow|[Jj]usbasche|[Cc]ooper'
 
-# - we create the filtered dataframe for Network Graph based on name matching patterns
-filtered_net_df = net_df.loc[(net_df.source.str.contains(name_patterns_net)
-                              | net_df.destination.str.contains(name_patterns_net))
-                             & (net_df.source != '')
-                             & (net_df.destination != ''), :].reset_index(drop=True)
+# - we create the filtered dataframe to drop 'blank' destinations and self-sending
+filtered_net_df = net_df.loc[net_df.destination != '', :].reset_index(drop = True)
+filtered_net_df = filtered_net_df.loc[filtered_net_df.source != filtered_net_df.destination, :].reset_index(drop = True)
 
-sample_idx2 = random.sample(range(0, filtered_net_df.shape[0]), min(250, filtered_net_df.shape[0])) # sample some emails
+filtered_net_df.loc[filtered_net_df.destination.str.contains(name_patterns_net),:]
+
+# - we create the filtered dataframe for Network Graph based on name matching patterns
+# filtered_net_df = net_df.loc[(net_df.source.str.contains(name_patterns_net)
+#                               | net_df.destination.str.contains(name_patterns_net))
+#                              & (net_df.source != '')
+#                              & (net_df.destination != ''), :].reset_index(drop=True)
+
+net_df.source.str.contains(name_patterns_net)
+
+
+
+sample_idx2 = random.sample(range(0, filtered_net_df.shape[0]), min(400, filtered_net_df.shape[0])) # sample some emails
 sample_net_df = filtered_net_df.loc[sample_idx2, :].reset_index(drop=True)
 
 # - create the nodes list with the colours; nodes are coloured if they contain the names of interest
@@ -408,7 +418,6 @@ nt_network.toggle_hide_edges_on_drag(False)
 nt_network.barnes_hut(spring_length=10, overlap=0.5, gravity=-10000, central_gravity=0.8)
 nt_network.from_nx(G_net)
 nt_network.show("network_graph.html")
-
 
 
 # --- we try to derive the centrality score of the nodes (we will use the actual email addresses)
