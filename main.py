@@ -385,9 +385,22 @@ interest_idx = filtered_net_df.loc[filtered_net_df.source.str.contains(name_patt
 sample_idx2 = random.sample(range(0, filtered_net_df.shape[0]), min(1000, filtered_net_df.shape[0])) # sample some emails
 sample_net_df = filtered_net_df.loc[sample_idx2 + list(interest_idx), :].reset_index(drop=True)
 
-# - create the nodes list with the colours; nodes are coloured if they contain the names of interest
+# - create the list of source and destination nodes
 full_nodes_net = sample_net_df.source.to_list() + sample_net_df.destination.to_list()
-color_nodes_net = ['red' if re.findall(name_patterns_net, i.lower()) != [] else '#3944BC' for i in full_nodes_net]
+
+# - we colour based on emails that contain names of interest, and whether the email address is an 'Enron' email
+color_nodes_net = []
+for i in full_nodes_net:
+    if re.findall(name_patterns_net, i.lower()):
+        color_nodes_net.append('red')
+    elif 'enron' in i.lower():
+        color_nodes_net.append('#2E8B57')
+    else:
+        color_nodes_net.append('#3944BC')
+
+# len(color_nodes_net)
+
+# color_nodes_net = ['red' if re.findall(name_patterns_net, i.lower()) != [] else '#3944BC' for i in full_nodes_net]
 nodes_color_net_df = pd.DataFrame({'node': full_nodes_net, 'color': color_nodes_net})
 
 # - plot the Network Graph: initialise the networkx graph object
