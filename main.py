@@ -51,7 +51,7 @@ from spacy.tokens import Span
 from nltk.tokenize import sent_tokenize
 import nltk
 
-# nltk.download('punkt') # uncomment this if you run into punkt download issues
+nltk.download('punkt') # uncomment this if you run into punkt download issues
 
 # - other configurations
 pd.set_option("display.max_column", None)
