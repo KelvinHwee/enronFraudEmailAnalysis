@@ -428,16 +428,46 @@ nt_network.from_nx(G_net)
 nt_network.show("network_graph.html")
 
 
-# --- we try to derive the centrality score of the nodes (we will use the actual email addresses)
+# - we try to derive the degree centrality score of the nodes
 deg_cent_G1 = nx.degree_centrality(G_net)
 deg_g1_df = pd.DataFrame(deg_cent_G1.items(), columns=['Emails', 'Deg_centrality'])\
                             .sort_values(by = "Deg_centrality", ascending=False)
 
-deg_g1_df.head(10)
+print('We look at the top 10 email addresses (for degree centrality): ', deg_g1_df.head(10))
 
+
+# - we try to derive the closeness centrality score of the nodes
+close_cent_G1 = nx.closeness_centrality(G_net)
+close_g1_df = pd.DataFrame(close_cent_G1.items(), columns=['Emails', 'Closeness_centrality'])\
+                            .sort_values(by = "Closeness_centrality", ascending=False)
+
+print('We look at the top 10 email addresses (for closeness centrality): ', close_g1_df.head(10))
+
+
+# - we try to derive the between centrality score of the nodes
+btwn_cent_G1 = nx.betweenness_centrality(G_net)
+btwn_g1_df = pd.DataFrame(btwn_cent_G1.items(), columns=['Emails', 'Betweeness_centrality'])\
+                            .sort_values(by = "Betweeness_centrality", ascending=False)
+
+print('We look at the top 10 email addresses (for betweeness centrality): ', btwn_g1_df.head(10))
+
+
+# - we combine the scores and return the top 3 and its graph
+cent_scores_df = deg_g1_df.merge(close_g1_df, how='left', on='Emails').merge(btwn_g1_df, how='left', on='Emails')
+cent_scores_df["Total_scores"] = cent_scores_df.Deg_centrality * \
+                                 cent_scores_df.Closeness_centrality * \
+                                 cent_scores_df.Betweeness_centrality
+
+cent_scores_df = cent_scores_df.sort_values(by="Total_scores", ascending=False)
+
+print('We look at the top 10 email addresses (for total score): ', cent_scores_df.head(10))
 
 
 # - plot graph for the top 3 most central nodes
+
+
+
+
 
 
 # --- we try to find the largest community
