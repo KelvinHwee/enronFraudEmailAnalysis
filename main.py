@@ -394,13 +394,10 @@ for i in full_nodes_net:
     if re.findall(name_patterns_net, i.lower()):
         color_nodes_net.append('red')
     elif 'enron' in i.lower():
-        color_nodes_net.append('#2E8B57')
+        color_nodes_net.append('#AEF359')
     else:
         color_nodes_net.append('#3944BC')
 
-# len(color_nodes_net)
-
-# color_nodes_net = ['red' if re.findall(name_patterns_net, i.lower()) != [] else '#3944BC' for i in full_nodes_net]
 nodes_color_net_df = pd.DataFrame({'node': full_nodes_net, 'color': color_nodes_net})
 
 # - plot the Network Graph: initialise the networkx graph object
@@ -431,7 +428,7 @@ deg_g1_df = pd.DataFrame(degree_G1.items(), columns=['Emails', 'Deg_centrality']
 
 
 degree_G1 = list(degree_G1.values())
-type(degree_G1)
+
 
 # - plot graph for the top 3 most central nodes
 
