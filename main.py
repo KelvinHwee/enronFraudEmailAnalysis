@@ -377,12 +377,22 @@ filtered_net_df = net_df.loc[net_df.destination != '', :].reset_index(drop = Tru
 filtered_net_df = filtered_net_df.loc[filtered_net_df.source != filtered_net_df.destination, :].reset_index(drop = True)
 
 # - we identify which rows contain names of interest (based on Wikipedia, the C-suite officers)
-name_patterns_net = '[Ss]killing|[Ff]astow|[Jj]usbasche|[Cc]ooper'
+name_patterns_net = '[Ss]killing|[Ff]astow|[Jj]usbasche|[Cc]ooper|[Bb]elden'
 interest_idx = filtered_net_df.loc[filtered_net_df.source.str.contains(name_patterns_net) |
-                                   filtered_net_df.destination.str.contains(name_patterns_net), :].head(100).index
+                                   filtered_net_df.destination.str.contains(name_patterns_net), :].head(300).index
+
+# - we identify names that we want to exclude
+name_patterns_excl = '[Tt]echnology|outlook.team'
+excl_idx = filtered_net_df.loc[filtered_net_df.source.str.contains(name_patterns_excl) |
+                               filtered_net_df.destination.str.contains(name_patterns_excl), :].index
+
+# - complete the list
+list_of_idx = [num for num in range(filtered_net_df.shape[0]) if num not in list(excl_idx) + list(interest_idx)]
 
 # - we take a sample of the dataframe for plotting the graph
-sample_idx2 = random.sample(range(0, filtered_net_df.shape[0]), min(1000, filtered_net_df.shape[0])) # sample some emails
+sample_idx2 = random.sample(list_of_idx, min(3000, len(list_of_idx))) + list(interest_idx) # sample the emails
+
+# - final sample dataframe for plotting
 sample_net_df = filtered_net_df.loc[sample_idx2 + list(interest_idx), :].reset_index(drop=True)
 
 # - create the list of source and destination nodes
@@ -414,20 +424,17 @@ for i in range(sample_net_df.shape[0]):
 # - plot the final graph using Pyvis (https://pyvis.readthedocs.io/en/latest/documentation.html)
 nt_network = Network(height=1000, width=1200, directed=True)
 nt_network.toggle_hide_edges_on_drag(False)
-
-# - BarnesHut is a quadtree based gravity model. It is the fastest
-# nt_network.barnes_hut(spring_length=10, overlap=0.5, gravity=-10000, central_gravity=0.8)
 nt_network.from_nx(G_net)
 nt_network.show("network_graph.html")
 
 
 # --- we try to derive the centrality score of the nodes (we will use the actual email addresses)
-degree_G1 = nx.degree_centrality(G_net)
-deg_g1_df = pd.DataFrame(degree_G1.items(), columns=['Emails', 'Deg_centrality'])\
+deg_cent_G1 = nx.degree_centrality(G_net)
+deg_g1_df = pd.DataFrame(deg_cent_G1.items(), columns=['Emails', 'Deg_centrality'])\
                             .sort_values(by = "Deg_centrality", ascending=False)
 
+deg_g1_df.head(10)
 
-degree_G1 = list(degree_G1.values())
 
 
 # - plot graph for the top 3 most central nodes
