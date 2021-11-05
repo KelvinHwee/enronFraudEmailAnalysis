@@ -372,27 +372,18 @@ net_source, net_destin, source_dest_net_map, _  = one_to_one_mapping(email_sende
 # - create the dataframe for Network Graph
 net_df = pd.DataFrame({'source': net_source, 'destination': net_destin})
 
-# - identify if the nodes contain names of interest (based on Wikipedia, the C-suite officers)
-name_patterns_net = '[Ss]killing|[Ff]astow|[Jj]usbasche|[Cc]ooper'
-
-# - we create the filtered dataframe to drop 'blank' destinations and self-sending
+# - we create the filtered dataframe for Network Graph and drop 'blank' destinations and the self-sending ones
 filtered_net_df = net_df.loc[net_df.destination != '', :].reset_index(drop = True)
 filtered_net_df = filtered_net_df.loc[filtered_net_df.source != filtered_net_df.destination, :].reset_index(drop = True)
 
-filtered_net_df.loc[filtered_net_df.destination.str.contains(name_patterns_net),:]
+# - we identify which rows contain names of interest (based on Wikipedia, the C-suite officers)
+name_patterns_net = '[Ss]killing|[Ff]astow|[Jj]usbasche|[Cc]ooper'
+interest_idx = filtered_net_df.loc[filtered_net_df.source.str.contains(name_patterns_net) |
+                                   filtered_net_df.destination.str.contains(name_patterns_net), :].head(100).index
 
-# - we create the filtered dataframe for Network Graph based on name matching patterns
-# filtered_net_df = net_df.loc[(net_df.source.str.contains(name_patterns_net)
-#                               | net_df.destination.str.contains(name_patterns_net))
-#                              & (net_df.source != '')
-#                              & (net_df.destination != ''), :].reset_index(drop=True)
-
-net_df.source.str.contains(name_patterns_net)
-
-
-
-sample_idx2 = random.sample(range(0, filtered_net_df.shape[0]), min(400, filtered_net_df.shape[0])) # sample some emails
-sample_net_df = filtered_net_df.loc[sample_idx2, :].reset_index(drop=True)
+# - we take a sample of the dataframe for plotting the graph
+sample_idx2 = random.sample(range(0, filtered_net_df.shape[0]), min(1000, filtered_net_df.shape[0])) # sample some emails
+sample_net_df = filtered_net_df.loc[sample_idx2 + list(interest_idx), :].reset_index(drop=True)
 
 # - create the nodes list with the colours; nodes are coloured if they contain the names of interest
 full_nodes_net = sample_net_df.source.to_list() + sample_net_df.destination.to_list()
@@ -404,7 +395,7 @@ G_net = nx.Graph()
 
 # - plot the Network Graph: add nodes (do we want to consider the weightage)
 for i in range(nodes_color_net_df.shape[0]):
-    G_net.add_node(nodes_color_net_df["node"][i], color=nodes_color_net_df["color"][i])
+    G_net.add_node(nodes_color_net_df["node"][i], color=nodes_color_net_df["color"][i], layout = 'hierarchical')
 
 # - plot the Network Graph: add edges (label the edges with the relation)
 for i in range(sample_net_df.shape[0]):
@@ -415,7 +406,7 @@ nt_network = Network(height=1000, width=1200, directed=True)
 nt_network.toggle_hide_edges_on_drag(False)
 
 # - BarnesHut is a quadtree based gravity model. It is the fastest
-nt_network.barnes_hut(spring_length=10, overlap=0.5, gravity=-10000, central_gravity=0.8)
+# nt_network.barnes_hut(spring_length=10, overlap=0.5, gravity=-10000, central_gravity=0.8)
 nt_network.from_nx(G_net)
 nt_network.show("network_graph.html")
 

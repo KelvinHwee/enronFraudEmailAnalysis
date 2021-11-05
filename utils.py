@@ -351,3 +351,7 @@ def get_relation(sent):
 # # - get a de-duplicated source_dest_map (to drop the repeats; above non-deduplicated map is required only for counting)
 # source_dest_map_dedup = sorted(tuple(set(source_dest_map)))
 
+# filtered_net_df = net_df.loc[(net_df.source.str.contains(name_patterns_net)
+#                               | net_df.destination.str.contains(name_patterns_net))
+#                              & (net_df.source != '')
+#                              & (net_df.destination != ''), :].reset_index(drop=True)
