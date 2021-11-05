@@ -411,7 +411,6 @@ nt_network.show("network_graph.html")
 
 
 
-
 # --- we try to derive the centrality score of the nodes (we will use the actual email addresses)
 degree_G1 = nx.degree_centrality(G_net)
 deg_g1_df = pd.DataFrame(degree_G1.items(), columns=['Emails', 'Deg_centrality'])\
