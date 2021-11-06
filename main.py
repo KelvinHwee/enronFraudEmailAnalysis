@@ -26,7 +26,7 @@ import random
 
 # - import packages for visualisation
 import plotly.graph_objects as go
-import plotly.io as pio #
+import plotly.io as pio
 
 pio.renderers.default = "browser"
 from pyvis.network import Network
@@ -41,7 +41,8 @@ from tqdm import tqdm
 - the file was then downloaded to this folder: 
 - /home/kelvinhwee/.cache/pip/wheels/62/79/40/648305f0a2cd1fdab236bd6764ba467437c5fae2a925768153 
 - (look out for the installation completion message in the terminal)
-- we copied the zipped file, and extracted the "en_core_web_sm-3.1.0" folder (containing the "config.cfg" file) into the 
+- we copied the zipped file, and extracted the "en_core_web_sm-3.1.0" folder (containing the "config.cfg" file) into the
+- working directory 
 '''
 import re
 import spacy
