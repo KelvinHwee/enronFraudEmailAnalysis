@@ -54,15 +54,15 @@ import nltk
 
 nltk.download('punkt') # uncomment this if you run into punkt download issues
 
-# - other configurations
-pd.set_option("display.max_column", None)
-source_filepath = '/home/kelvinhwee/PycharmProjects/sourceFiles'
-
 # - we load the spacy trained pipelines (for English); this is an English pipeline optimized for CPU
 nlp = spacy.load('en_core_web_sm-3.1.0')
 
 # - initialise the spacy Matcher with a vocab; matcher must always share the same vocab with the documents it operate on
 matcher = Matcher(nlp.vocab)
+
+# - other configurations
+pd.set_option("display.max_column", None)
+source_filepath = '/home/kelvinhwee/PycharmProjects/sourceFiles'
 
 # - packages created
 from utils import extract_domain, reformat_email_func
