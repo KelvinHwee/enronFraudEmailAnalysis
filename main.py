@@ -231,8 +231,15 @@ emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
 # - we take a look at some of the rows based on some sample name matches; we used "apply" together with
 # - "str" and "contains", and together with "loc", we can extract rows based on columns that have lists as elements
-try_names = ['jeffrey.skilling','andrew.fastow','bill.williams']
-print(emails_df_feat.loc[(emails_df_feat.To.apply(lambda x : str(x)).str.contains('|'.join(try_names))),:])
+# - https://www.chicagotribune.com/sns-ap-enron-trial-glance-story.html
+convicted_names = ['kenneth.lay','jeffrey.skilling','kevin.howard','michael.krautz','joe.hirko','rex.shelby',
+                   'scott.yeager','andrew.fastow','david.bermingham','giles.darby','gary.mulgrew','daniel.bayly',
+                   'james.brown','robert.furst','william.fuhs','dan.boyle','sheila.kahanek','christopher.calger',
+                   'richard.causey','lfastow','paula.rieker','ken.rice','mark.koenig','kevin.hannon','tim.despain',
+                   'jeff.richter','ben.glisan','david.delainey','michael.kopper','tim.belden','larry.lawyer',
+                   'david.duncan','wes.colwell','raymond.bowen']
+
+print(emails_df_feat.loc[(emails_df_feat.To.apply(lambda x : str(x)).str.contains('|'.join(convicted_names))), :])
 
 
 ########################################################################################################################
@@ -381,7 +388,7 @@ net_df = pd.DataFrame({'source': net_source, 'destination': net_destin})
 filtered_net_df = net_df.loc[net_df.destination != '', :].reset_index(drop = True)
 filtered_net_df = filtered_net_df.loc[filtered_net_df.source != filtered_net_df.destination, :].reset_index(drop = True)
 
-# - we identify which rows contain names of interest (based on Wikipedia, the C-suite officers)
+# - we identify which rows contain some of the names of interest (based on Wikipedia, the C-suite officers)
 name_patterns_net = '[Ss]killing|[Ff]astow|[Jj]usbasche|[Cc]ooper|[Bb]elden'
 interest_idx = filtered_net_df.loc[filtered_net_df.source.str.contains(name_patterns_net) |
                                    filtered_net_df.destination.str.contains(name_patterns_net), :].head(300).index
@@ -402,11 +409,6 @@ sample_net_df = filtered_net_df.loc[sample_idx2 + list(interest_idx), :].reset_i
 
 # - create the list of source and destination nodes
 full_nodes_net = sample_net_df.source.to_list() + sample_net_df.destination.to_list()
-
-sample_net_df.loc[sample_net_df.destination.str.contains('bill')]
-
-emails_df_feat.loc[emails_df_feat.body.str.contains('trade') & emails_df_feat.To[0],:]
-'steven' in ['steven']
 
 # - we colour based on emails that contain names of interest, and whether the email address is an 'Enron' email
 color_nodes_net = []
