@@ -123,6 +123,25 @@ fields_list_plus = fields_list + [i.lower() for i in fields_list] \
 # - create dictionary (using dictionary comprehension) to do "conversion" later on (you will see)
 keys_dict = {i: [k, len(k)] for i, k in enumerate(keys_list)}
 
+# - we first compile the list of regex logic first
+clean_html_tags = re.compile("<[/]*.*?>|&nbsp;")
+clean_multi_space = re.compile("[\s]{2,}")
+clean_field_headers = re.compile('|'.join([item + ":" for item in fields_list_plus]))
+clean_emails = re.compile("[\w._]+@[\w.]+")
+clean_fwds = re.compile("[-_]{2,}.*?[-_]{2,}|FW:|Fwd:|RE:")  # cleans "Forwarded by" in between long dashes and others
+clean_unintended_sends = re.compile("[-_*]{2,}.*?[-_*]{2,}")
+clean_dashes = re.compile("[-]{2,}")
+clean_transmission_warn = re.compile(r"The information.*?any computer.")  # cleans warning texts
+clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+")  # for format DD/MM/YYYY XX:XX:XX AM/PM
+clean_multi_symbols = re.compile("[>,(\"\'\\!.\[\]-]+\s?[>,(\"\'\\!.\[\]-]+")  # e.g. "> >", ", , ", ", ("
+clean_addr_code = re.compile("[, ]*[A-Z]{2}\s+[\d]{5}")  # cleans ", TX 77082"
+clean_phone_fax = re.compile("[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*")  # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
+clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}")  # (281) 558-9198, (713) 670-2457
+clean_link = re.compile(r"[http]*[https]*[:/]*/?[\w]+[.][\w]+.*[.][\w]+")  # e.g. http://explorer.msn.com, https://explorer.msn.com.net"
+clean_email_codes = re.compile("[=][\d]+")  # clear email codes "=19", "=20"
+clean_very_long_text = re.compile("[\w+]{20,}")
+# Other things to clean: Staff Meeting - Mt. Ranier 5/30/2001 Time: 1:00 PM - 3:00 PM (Central Standard Time)
+
 # - we try to do a batch-wise extraction of the email contents based on the placeholders e.g. "To", "From", "Subject"
 list_of_dict = []
 for i in range(emails_df.shape[0]):  # i=4
@@ -144,25 +163,6 @@ for i in range(emails_df.shape[0]):  # i=4
     # this step saves the body of the text; we apply some regex logic
     text_body = temp_str[17:]
     text_body = " ".join([text for text in text_body]).strip()  # joins back all elements into a single string
-
-    # regex logic
-    clean_html_tags = re.compile("<[/]*.*?>|&nbsp;")
-    clean_multi_space = re.compile("[\s]{2,}")
-    clean_field_headers = re.compile('|'.join([item + ":" for item in fields_list_plus]))
-    clean_emails = re.compile("[\w._]+@[\w.]+")
-    clean_fwds = re.compile("[-_]{2,}.*?[-_]{2,}|FW:|Fwd:|RE:")  # cleans "Forwarded by" in between long dashes and others
-    clean_unintended_sends = re.compile("[-_*]{2,}.*?[-_*]{2,}")
-    clean_dashes = re.compile("[-]{2,}")
-    clean_transmission_warn = re.compile(r"The information.*?any computer.")  # cleans warning texts
-    clean_datetime = re.compile("[\d]{1,2}/[\d]{1,2}/[\d]{4}\s+[\d]{1,2}:[\d]{1,2}[:\d]*\s+[AMPM]+")  # for format DD/MM/YYYY XX:XX:XX AM/PM
-    clean_multi_symbols = re.compile("[>,(\"\'\\!.\[\]-]+\s?[>,(\"\'\\!.\[\]-]+")  # e.g. "> >", ", , ", ", ("
-    clean_addr_code = re.compile("[, ]*[A-Z]{2}\s+[\d]{5}")  # cleans ", TX 77082"
-    clean_phone_fax = re.compile("[\d]*[-]*[\d]{3}-[\d]{3}-[\d]{4}[\s]*[(]*\w*[)]*")  # "713-853-3989 (Phone)", "713-646-3393(Fax", "1-888-334-4204"
-    clean_phone_ctrycode = re.compile("\([\d]{3}\)[\s]*[\d]{3}-[\d]{4}")  # (281) 558-9198, (713) 670-2457
-    clean_link = re.compile(r"[http]*[https]*[:/]*/?[\w]+[.][\w]+.*[.][\w]+")  # e.g. http://explorer.msn.com, https://explorer.msn.com.net"
-    clean_email_codes = re.compile("[=][\d]+")  # clear email codes "=19", "=20"
-    clean_very_long_text = re.compile("[\w+]{20,}")
-    # Other things to clean: Staff Meeting - Mt. Ranier 5/30/2001 Time: 1:00 PM - 3:00 PM (Central Standard Time)
 
     # apply regex logic
     text_body = re.sub(clean_field_headers, "", text_body)
