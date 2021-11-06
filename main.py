@@ -229,6 +229,12 @@ emails_df_feat["Cc_domain"] = extract_domain(emails_df_feat, "Cc")
 emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
 
+# - we take a look at some of the rows based on some sample name matches; we used "apply" together with
+# - "str" and "contains", and together with "loc", we can extract rows based on columns that have lists as elements
+try_names = ['jeffrey.skilling','andrew.fastow','bill.williams']
+print(emails_df_feat.loc[(emails_df_feat.To.apply(lambda x : str(x)).str.contains('|'.join(try_names))),:])
+
+
 ########################################################################################################################
 #   Find relationships using Sankey diagram - spot associations based on email address domains rather than names
 ########################################################################################################################
@@ -269,8 +275,7 @@ fig1 = go.Figure(data=[go.Sankey(
     link = dict(source = [s2[i] for i in sample_vals],
                 target = [d2[i] for i in sample_vals],
                 value = [v2[i] for i in sample_vals],
-                color = "#F699CF"
-                ))])
+                color = "#F699CF"))])
 
 fig1.update_layout(title_text="Sankey Diagram to show associations based on domains", font_size=10)
 fig1.show()
@@ -398,6 +403,11 @@ sample_net_df = filtered_net_df.loc[sample_idx2 + list(interest_idx), :].reset_i
 # - create the list of source and destination nodes
 full_nodes_net = sample_net_df.source.to_list() + sample_net_df.destination.to_list()
 
+sample_net_df.loc[sample_net_df.destination.str.contains('bill')]
+
+emails_df_feat.loc[emails_df_feat.body.str.contains('trade') & emails_df_feat.To[0],:]
+'steven' in ['steven']
+
 # - we colour based on emails that contain names of interest, and whether the email address is an 'Enron' email
 color_nodes_net = []
 for i in full_nodes_net:
@@ -464,18 +474,44 @@ print('We look at the top 10 email addresses (for total score): ', cent_scores_d
 
 
 # - plot graph for the top 3 most central nodes
+top3_emails = cent_scores_df.loc[:2, "Emails"].to_list()
+
+top3_net_df = filtered_net_df.loc[filtered_net_df.source.isin(top3_emails) |
+                                  filtered_net_df.destination.isin(top3_emails), :].reset_index(drop=True)
+
+# - create the list of source and destination nodes
+top3_nodes_net = top3_net_df.source.to_list() + top3_net_df.destination.to_list()
+
+# - we colour based on emails that contain names of interest, and whether the email address is an 'Enron' email
+top3_color_nodes_net = []
+for i in top3_nodes_net:
+    if i in top3_emails:
+        top3_color_nodes_net.append('red')
+    elif 'enron' in i.lower():
+        top3_color_nodes_net.append('#AEF359')
+    else:
+        top3_color_nodes_net.append('#3944BC')
+
+top3_nodes_color_net_df = pd.DataFrame({'node': top3_nodes_net, 'color': top3_color_nodes_net})
+
+# - plot the Network Graph: initialise the networkx graph object
+G_net_top3 = nx.Graph()
+
+# - plot the Network Graph: add nodes (do we want to consider the weightage)
+for i in range(top3_nodes_color_net_df.shape[0]):
+    G_net_top3.add_node(top3_nodes_color_net_df["node"][i],
+                        color=top3_nodes_color_net_df["color"][i],
+                        layout = 'hierarchical')
+
+# - plot the Network Graph: add edges (label the edges with the relation)
+for i in range(top3_net_df.shape[0]):
+    G_net_top3.add_edge(top3_net_df["source"][i], top3_net_df["destination"][i])
+
+# - plot the final graph using Pyvis (https://pyvis.readthedocs.io/en/latest/documentation.html)
+top3_network = Network(height=1000, width=1200, directed=True)
+top3_network.toggle_hide_edges_on_drag(False)
+top3_network.from_nx(G_net_top3)
+top3_network.show("network_graph_top3.html")
 
 
 
-
-
-
-# --- we try to find the largest community
-emails_df_feat.head()
-
-# - plot graph for the top largest community
-
-
-'''
-scattertext === https://github.com/JasonKessler/scattertext
-'''
