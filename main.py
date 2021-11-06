@@ -26,7 +26,7 @@ import random
 
 # - import packages for visualisation
 import plotly.graph_objects as go
-import plotly.io as pio
+import plotly.io as pio #
 
 pio.renderers.default = "browser"
 from pyvis.network import Network
