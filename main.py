@@ -439,6 +439,12 @@ nt_network.show("network_graph.html")
 
 
 # - we try to derive the degree centrality score of the nodes
+'''
+- Degree centrality is the most basic way of computing centrality. 
+- It simply measures the total number of connections linked to a node within a network graph. 
+- The degree centrality values are normalized by dividing by the maximum possible degree in a simple graph n-1 where n 
+- is the number of nodes in G.
+'''
 deg_cent_G1 = nx.degree_centrality(G_net)
 deg_g1_df = pd.DataFrame(deg_cent_G1.items(), columns=['Emails', 'Deg_centrality'])\
                             .sort_values(by = "Deg_centrality", ascending=False)
@@ -447,6 +453,11 @@ print('We look at the top 10 email addresses (for degree centrality): ', deg_g1_
 
 
 # - we try to derive the closeness centrality score of the nodes
+'''
+- Closeness centrality is a measure of centrality in a network, calculated as the reciprocal of the sum of the length 
+- of the shortest paths between the node and all other nodes in the graph. Thus, the more central a node is, the closer
+- it is to all other nodes.
+'''
 close_cent_G1 = nx.closeness_centrality(G_net)
 close_g1_df = pd.DataFrame(close_cent_G1.items(), columns=['Emails', 'Closeness_centrality'])\
                             .sort_values(by = "Closeness_centrality", ascending=False)
@@ -455,6 +466,11 @@ print('We look at the top 10 email addresses (for closeness centrality): ', clos
 
 
 # - we try to derive the between centrality score of the nodes
+'''
+- Betweenness centrality is a way of detecting the amount of influence a node has over the flow of information in a 
+- graph. It is often used to find nodes that serve as a bridge from one part of a graph to another. The algorithm
+- calculates unweighted shortest paths between all pairs of nodes in a graph.
+'''
 btwn_cent_G1 = nx.betweenness_centrality(G_net)
 btwn_g1_df = pd.DataFrame(btwn_cent_G1.items(), columns=['Emails', 'Betweeness_centrality'])\
                             .sort_values(by = "Betweeness_centrality", ascending=False)
