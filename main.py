@@ -27,7 +27,6 @@ import random
 # - import packages for visualisation
 import plotly.graph_objects as go
 import plotly.io as pio
-import chart_studio.plotly as py
 pio.renderers.default = "browser" # to plot a static version, change "browser" to "svg"
 from pyvis.network import Network
 import networkx as nx
@@ -274,14 +273,14 @@ random.seed(24)
 sample_vals = random.sample(range(0, len(s2)), 120)  # we sample 120 entries
 
 fig1 = go.Figure(data=[go.Sankey(
-    node = dict(
-        pad = 5, thickness = 20, line = dict(color = "black", width = 0.5),
-        label = full_list_of_domains, color = "#3944BC"
-    ),
-    link = dict(source = [s2[i] for i in sample_vals],
-                target = [d2[i] for i in sample_vals],
-                value = [v2[i] for i in sample_vals],
-                color = "#F699CF"))])
+                    node = dict(
+                    pad = 5, thickness = 20, line = dict(color = "black", width = 0.5),
+                    label = full_list_of_domains, color = "#3944BC"
+                    ),
+                    link = dict(source = [s2[i] for i in sample_vals],
+                                target = [d2[i] for i in sample_vals],
+                                value = [v2[i] for i in sample_vals],
+                                color = "#F699CF"))])
 
 fig1.update_layout(title_text="Sankey Diagram to show associations based on email domains", font_size=10)
 fig1.show()
