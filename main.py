@@ -27,8 +27,8 @@ import random
 # - import packages for visualisation
 import plotly.graph_objects as go
 import plotly.io as pio
-
-pio.renderers.default = "browser"
+import chart_studio.plotly as py
+pio.renderers.default = "browser" # to plot a static version, change "browser" to "svg"
 from pyvis.network import Network
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -230,7 +230,7 @@ emails_df_feat["Cc_domain"] = extract_domain(emails_df_feat, "Cc")
 emails_df_feat["Bcc_domain"] = extract_domain(emails_df_feat, "Bcc")
 
 
-# - we take a look at some of the rows based on some sample name matches; we used "apply" together with
+# - we take a quick look at some of the rows based on some sample name matches; we used "apply" together with
 # - "str" and "contains", and together with "loc", we can extract rows based on columns that have lists as elements
 # - https://www.chicagotribune.com/sns-ap-enron-trial-glance-story.html
 convicted_names = ['kenneth.lay','jeffrey.skilling','kevin.howard','michael.krautz','joe.hirko','rex.shelby',
@@ -240,14 +240,12 @@ convicted_names = ['kenneth.lay','jeffrey.skilling','kevin.howard','michael.krau
                    'jeff.richter','ben.glisan','david.delainey','michael.kopper','tim.belden','larry.lawyer',
                    'david.duncan','wes.colwell','raymond.bowen']
 
-print(emails_df_feat.loc[(emails_df_feat.To.apply(lambda x : str(x)).str.contains('|'.join(convicted_names))), :])
+print(emails_df_feat.loc[(emails_df_feat.To.apply(lambda x : str(x)).str.contains('|'.join(convicted_names))), :].head())
 
 
 ########################################################################################################################
 #   Find relationships using Sankey diagram - spot associations based on email address domains rather than names
 ########################################################################################################################
-
-# --- we use different ways to plot the associations (Sankey diagram)
 
 # - create the dataframe that will contain the "source" and "destination"
 source_domains = emails_df_feat.From_domain.to_list()
@@ -285,7 +283,7 @@ fig1 = go.Figure(data=[go.Sankey(
                 value = [v2[i] for i in sample_vals],
                 color = "#F699CF"))])
 
-fig1.update_layout(title_text="Sankey Diagram to show associations based on domains", font_size=10)
+fig1.update_layout(title_text="Sankey Diagram to show associations based on email domains", font_size=10)
 fig1.show()
 
 
